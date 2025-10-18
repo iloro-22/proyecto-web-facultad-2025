@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Iniciar Sesión - FarmaDelivery</title>
+</head>
+<body>
+    <h2>Iniciar Sesión</h2>
+    
+    <form method="post">
+        {% csrf_token %}  {{ form.as_p }}
+        
+        <button type="submit">Ingresar</button>
+        
+        {% if form.errors %}
+            <p style="color: red;">Tu nombre de usuario y contraseña no coinciden. Por favor, inténtalo de nuevo.</p>
+        {% endif %}
+    </form>
+    
+    <p>¿No tienes cuenta? Regístrate.</p>
+    <p><a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a></p>
+
+</body>
+</html>
