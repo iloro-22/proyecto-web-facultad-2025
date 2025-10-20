@@ -1,0 +1,39 @@
+{% extends 'core/base.html' %}
+{% block title %}Seleccionar Registro - FarmaDelivery{% endblock %}
+
+{% block content %}
+<style>
+    .container-registro { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); padding: 40px; width: 100%; max-width: 500px; text-align: center; margin: 40px auto; }
+    .logo { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 30px; }
+    .logo i { font-size: 2.5rem; color: var(--primary); }
+    .logo h1 { font-size: 2rem; color: var(--primary); font-weight: bold; }
+    .container-registro h2 { font-size: 1.8rem; color: var(--dark); margin-bottom: 30px; font-weight: 600; }
+    .options-container { display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px; }
+    .option-link { display: block; padding: 18px; border: 2px solid var(--primary); border-radius: 15px; text-decoration: none; color: var(--primary); font-size: 1.1rem; font-weight: 600; transition: all 0.3s ease; }
+    .option-link i { margin-right: 10px; }
+    .option-link:hover { background: var(--primary); color: white; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(42, 125, 225, 0.2); }
+    .login-link { color: #666; font-size: 0.9rem; }
+    .login-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .login-link a:hover { color: var(--secondary); text-decoration: underline; }
+</style>
+
+<div class="container-registro">
+    <div class="logo">
+        <i class="fas fa-pills"></i>
+        <h1>FarmaDelivery</h1>
+    </div>
+    <h2>¿Cómo quieres registrarte?</h2>
+    <div class="options-container">
+        <a href="{% url 'cliente_signup' %}" class="option-link">
+            <i class="fas fa-user"></i> Soy Cliente
+        </a>
+        <a href="{% url 'farmacia_signup' %}" class="option-link">
+            <i class="fas fa-clinic-medical"></i> Soy una Farmacia
+        </a>
+        <a href="{% url 'repartidor_signup' %}" class="option-link">
+            <i class="fas fa-motorcycle"></i> Soy un Repartidor
+        </a>
+    </div>
+    <p class="login-link">¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia Sesión</a></p>
+</div>
+{% endblock %}

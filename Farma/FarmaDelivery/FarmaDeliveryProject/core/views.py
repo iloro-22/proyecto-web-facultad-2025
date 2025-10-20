@@ -18,7 +18,8 @@ from .models import (
 )
 from .forms import (
     BusquedaProductoForm, RecetaForm, ConfirmacionPedidoForm,
-    DireccionForm, PerfilClienteForm, ContactoForm
+    DireccionForm, PerfilClienteForm, ContactoForm,
+    ClienteSignUpForm, FarmaciaSignUpForm, RepartidorSignUpForm
 )
 
 # Vista principal - página de inicio
@@ -575,3 +576,46 @@ def enviar_email_cambio_estado(pedido, estado_anterior):
         )
     except Exception as e:
         print(f"Error enviando email: {e}")
+
+
+# --- TUS VISTAS DE REGISTRO (AÑADIDAS AL FINAL) ---
+
+def select_signup(request):
+    """Muestra la página para elegir qué tipo de usuario registrar."""
+    return render(request, 'registration/select_signup.html')
+
+def cliente_signup(request):
+    """Maneja el registro de un nuevo Cliente."""
+    if request.method == 'POST':
+        form = ClienteSignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '¡Registro de cliente exitoso! Ahora podés iniciar sesión con tu DNI.')
+            return redirect('login')
+    else:
+        form = ClienteSignUpForm()
+    return render(request, 'registration/signup_form.html', {'form': form, 'user_type': 'Cliente'})
+
+def farmacia_signup(request):
+    """Maneja el registro de una nueva Farmacia."""
+    if request.method == 'POST':
+        form = FarmaciaSignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.info(request, 'Solicitud de registro de farmacia enviada. Quedará pendiente de aprobación.')
+            return redirect('login')
+    else:
+        form = FarmaciaSignUpForm()
+    return render(request, 'registration/signup_form.html', {'form': form, 'user_type': 'Farmacia'})
+
+def repartidor_signup(request):
+    """Maneja el registro de un nuevo Repartidor."""
+    if request.method == 'POST':
+        form = RepartidorSignUpForm(request.POST, request.FILES) # Importante: request.FILES
+        if form.is_valid():
+            form.save()
+            messages.info(request, 'Solicitud de registro de repartidor enviada. Quedará pendiente de aprobación.')
+            return redirect('login')
+    else:
+        form = RepartidorSignUpForm()
+    return render(request, 'registration/signup_form.html', {'form': form, 'user_type': 'Repartidor'})

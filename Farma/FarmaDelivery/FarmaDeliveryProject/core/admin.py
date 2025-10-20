@@ -83,8 +83,8 @@ class FarmaciaAdmin(admin.ModelAdmin):
 # Configuración del admin para Repartidor
 @admin.register(Repartidor)
 class RepartidorAdmin(admin.ModelAdmin):
-    list_display = ['user', 'dni', 'telefono', 'vehiculo', 'activo', 'rol']
-    list_filter = ['activo', 'rol', 'vehiculo']
+    list_display = ['user', 'dni', 'telefono', 'tipo_vehiculo', 'activo', 'rol']
+    list_filter = ['activo', 'rol', 'tipo_vehiculo']
     search_fields = ['user__first_name', 'user__last_name', 'user__email', 'dni']
     ordering = ['user__last_name', 'user__first_name']
     readonly_fields = ['rol']

@@ -1,5 +1,6 @@
 # FarmaDeliveryProject/urls.py (Archivo principal del proyecto)
 
+from re import DEBUG
 from django.contrib import admin
 from django.urls import path, include
 from core import views as core_views # Importamos la vista 'home_page' de tu app 'core'
@@ -8,6 +9,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Esta línea activa las funciones de Login y Logout
     path('accounts/', include('django.contrib.auth.urls')),
+    path('', include('core.urls')),
     
     # URLs principales
     path('', core_views.home_page, name='home'),
@@ -30,4 +32,11 @@ urlpatterns = [
     # API endpoints
     path('api/geocodificar/', core_views.geocodificar_direccion, name='geocodificar_direccion'),
     path('api/ubicacion/', core_views.actualizar_ubicacion_repartidor, name='actualizar_ubicacion_repartidor'),
+
+    path('registro/', core_views.select_signup, name='select_signup'),
+    path('registro/cliente/', core_views.cliente_signup, name='cliente_signup'),
+    path('registro/farmacia/', core_views.farmacia_signup, name='farmacia_signup'),
+    path('registro/repartidor/', core_views.repartidor_signup, name='repartidor_signup'),
 ]
+
+#if (DEBUG=True)
