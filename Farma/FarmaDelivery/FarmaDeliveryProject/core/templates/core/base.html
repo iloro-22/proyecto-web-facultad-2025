@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FarmaDelivery - Pedidos de Medicamentos{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2A7DE1;
+            --secondary: #3BB3BD;
+            --accent: #FF6B6B;
+            --light: #F8F9FA;
+            --dark: #343A40;
+            --success: #28A745;
+            --warning: #FFC107;
+            --danger: #DC3545;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .logo i {
+            font-size: 1.8rem;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 20px;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background 0.3s;
+        }
+        
+        nav a:hover, nav a.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background-color: white;
+            color: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background-color: #f0f0f0;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .hero {
+            padding: 40px 0;
+            text-align: center;
+            background: white;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .hero p {
+            font-size: 1.1rem;
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto 25px;
+        }
+        
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 30px;
+            overflow: hidden;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: #f5f7fa;
+            font-size: 1rem;
+        }
+        
+        .search-bar button {
+            padding: 15px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .categories {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .category-btn {
+            padding: 10px 20px;
+            background: #f5f7fa;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .category-btn:hover, .category-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .product-image {
+            height: 180px;
+            background: #f5f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 3rem;
+        }
+        
+        .product-info {
+            padding: 15px;
+        }
+        
+        .product-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .product-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .product-price {
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        .product-price-final {
+            color: var(--success);
+            font-size: 1.1rem;
+        }
+        
+        .product-price-original {
+            color: #999;
+            text-decoration: line-through;
+            font-size: 0.9rem;
+        }
+        
+        .stock-status {
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 15px;
+        }
+        
+        .in-stock {
+            background: #e8f5e9;
+            color: var(--success);
+        }
+        
+        .low-stock {
+            background: #fff8e1;
+            color: var(--warning);
+        }
+        
+        .no-stock {
+            background: #ffebee;
+            color: var(--danger);
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            font-size: 1rem;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(42, 125, 225, 0.25);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px 12px 0 0 !important;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            border: none;
+        }
+        
+        .badge {
+            font-size: 0.8rem;
+            padding: 6px 12px;
+        }
+        
+        .status-pendiente { background-color: var(--warning); }
+        .status-confirmado { background-color: var(--primary); }
+        .status-preparando { background-color: var(--secondary); }
+        .status-listo { background-color: #17a2b8; }
+        .status-en-camino { background-color: #6f42c1; }
+        .status-entregado { background-color: var(--success); }
+        .status-cancelado { background-color: var(--danger); }
+        
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 40px 0 20px;
+            margin-top: 50px;
+        }
+        
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .footer-section h3 {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-section a {
+            color: #ddd;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-section a:hover {
+            color: white;
+        }
+        
+        .copyright {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #555;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            nav ul {
+                gap: 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-pills"></i>
+                    <span>FarmaDelivery</span>
+                </div>
+                
+                <nav>
+                    <ul>
+                        <li><a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}class="active"{% endif %}>Inicio</a></li>
+                        <li><a href="{% url 'buscar_productos' %}" {% if request.resolver_match.url_name == 'buscar_productos' %}class="active"{% endif %}>Medicamentos</a></li>
+                        <li><a href="{% url 'seguimiento_pedidos' %}" {% if request.resolver_match.url_name == 'seguimiento_pedidos' %}class="active"{% endif %}>Mis Pedidos</a></li>
+                        <li><a href="{% url 'perfil_cliente' %}" {% if request.resolver_match.url_name == 'perfil_cliente' %}class="active"{% endif %}>Mi Perfil</a></li>
+                        <li><a href="{% url 'contacto' %}" {% if request.resolver_match.url_name == 'contacto' %}class="active"{% endif %}>Contacto</a></li>
+                    </ul>
+                </nav>
+                
+                <div class="user-actions">
+                    <span class="text-white me-3">
+                        <i class="fas fa-user"></i> {{ user.get_full_name|default:user.username }}
+                    </span>
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>FarmaDelivery</h3>
+                    <p>Tu farmacia de confianza a domicilio. Medicamentos y productos de salud con entrega rápida y segura.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Enlaces Útiles</h3>
+                    <ul>
+                        <li><a href="{% url 'home' %}">Inicio</a></li>
+                        <li><a href="{% url 'buscar_productos' %}">Buscar Medicamentos</a></li>
+                        <li><a href="{% url 'seguimiento_pedidos' %}">Seguimiento de Pedidos</a></li>
+                        <li><a href="{% url 'contacto' %}">Contacto</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Información</h3>
+                    <ul>
+                        <li><a href="#">Términos y Condiciones</a></li>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Preguntas Frecuentes</a></li>
+                        <li><a href="#">Soporte Técnico</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Contacto</h3>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +54 11 1234-5678</li>
+                        <li><i class="fas fa-envelope"></i> info@farmadelivery.com</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Buenos Aires, Argentina</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2024 FarmaDelivery. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Función para geocodificar direcciones automáticamente
+        function geocodificarDireccion() {
+            const calle = document.getElementById('direccion-calle')?.value?.trim();
+            const numero = document.getElementById('direccion-numero')?.value?.trim();
+            const ciudad = document.getElementById('direccion-ciudad')?.value?.trim();
+            const provincia = document.getElementById('direccion-provincia')?.value?.trim();
+            
+            // Validar que al menos calle y número estén completos
+            if (!calle || !numero) {
+                return;
+            }
+            
+            // Mostrar indicador de carga
+            const indicador = document.getElementById('geocoding-indicator');
+            if (indicador) {
+                indicador.style.display = 'inline';
+                indicador.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Obteniendo coordenadas...';
+            }
+            
+            const formData = new FormData();
+            formData.append('calle', calle);
+            formData.append('numero', numero);
+            formData.append('ciudad', ciudad || 'Buenos Aires');
+            formData.append('provincia', provincia || 'Buenos Aires');
+            
+            fetch('{% url "geocodificar_direccion" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.latitud && data.longitud) {
+                    console.log('Coordenadas encontradas:', data.latitud, data.longitud);
+                    
+                    // Crear campos ocultos para las coordenadas
+                    let latField = document.getElementById('latitud-hidden');
+                    let lonField = document.getElementById('longitud-hidden');
+                    
+                    if (!latField) {
+                        latField = document.createElement('input');
+                        latField.type = 'hidden';
+                        latField.id = 'latitud-hidden';
+                        latField.name = 'latitud';
+                        document.querySelector('form').appendChild(latField);
+                    }
+                    
+                    if (!lonField) {
+                        lonField = document.createElement('input');
+                        lonField.type = 'hidden';
+                        lonField.id = 'longitud-hidden';
+                        lonField.name = 'longitud';
+                        document.querySelector('form').appendChild(lonField);
+                    }
+                    
+                    latField.value = data.latitud;
+                    lonField.value = data.longitud;
+                    
+                    // Mostrar éxito
+                    if (indicador) {
+                        indicador.innerHTML = '<i class="fas fa-check text-success"></i> Ubicación encontrada';
+                        indicador.className = 'text-success';
+                    }
+                    
+                    // Opcional: actualizar la página para mostrar farmacias cercanas
+                    setTimeout(() => {
+                        if (indicador) {
+                            indicador.style.display = 'none';
+                        }
+                    }, 3000);
+                    
+                } else {
+                    console.log('No se pudieron obtener las coordenadas:', data.error);
+                    if (indicador) {
+                        indicador.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> No se encontró la ubicación';
+                        indicador.className = 'text-warning';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error en geocodificación:', error);
+                if (indicador) {
+                    indicador.innerHTML = '<i class="fas fa-times text-danger"></i> Error al obtener ubicación';
+                    indicador.className = 'text-danger';
+                }
+            });
+        }
+        
+        // Agregar evento para geocodificar cuando se complete la dirección
+        document.addEventListener('DOMContentLoaded', function() {
+            const camposDireccion = ['direccion-calle', 'direccion-numero'];
+            let timeoutId;
+            
+            camposDireccion.forEach(id => {
+                const campo = document.getElementById(id);
+                if (campo) {
+                    campo.addEventListener('input', function() {
+                        clearTimeout(timeoutId);
+                        timeoutId = setTimeout(geocodificarDireccion, 2000); // Esperar 2 segundos después de escribir
+                    });
+                    
+                    campo.addEventListener('blur', function() {
+                        clearTimeout(timeoutId);
+                        timeoutId = setTimeout(geocodificarDireccion, 500); // Más rápido al salir del campo
+                    });
+                }
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

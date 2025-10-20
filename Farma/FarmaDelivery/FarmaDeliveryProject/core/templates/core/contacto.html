@@ -1,0 +1,137 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Contacto - FarmaDelivery{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Contacto</h1>
+    <p>¿Tienes alguna consulta? Estamos aquí para ayudarte</p>
+</section>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-envelope"></i> Envíanos un Mensaje</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.nombre.id_for_label }}" class="form-label">Nombre</label>
+                            {{ form.nombre }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.asunto.id_for_label }}" class="form-label">Asunto</label>
+                        {{ form.asunto }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.mensaje.id_for_label }}" class="form-label">Mensaje</label>
+                        {{ form.mensaje }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Enviar Mensaje
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-phone"></i> Información de Contacto</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6><i class="fas fa-phone text-primary"></i> Teléfono</h6>
+                    <p class="text-muted mb-0">+54 11 1234-5678</p>
+                    <small class="text-muted">Lunes a Viernes: 9:00 - 18:00</small>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-envelope text-primary"></i> Email</h6>
+                    <p class="text-muted mb-0">info@farmadelivery.com</p>
+                    <small class="text-muted">Respuesta en 24 horas</small>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-map-marker-alt text-primary"></i> Dirección</h6>
+                    <p class="text-muted mb-0">
+                        Av. Corrientes 1234<br>
+                        Buenos Aires, Argentina<br>
+                        C1043AAB
+                    </p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6><i class="fas fa-clock text-primary"></i> Horarios de Atención</h6>
+                    <p class="text-muted mb-0">
+                        <strong>Lunes a Viernes:</strong> 9:00 - 18:00<br>
+                        <strong>Sábados:</strong> 9:00 - 13:00<br>
+                        <strong>Domingos:</strong> Cerrado
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="faq1">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                ¿Cómo funciona el servicio?
+                            </button>
+                        </h2>
+                        <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Buscas tu medicamento, seleccionas la farmacia, subes tu receta si es necesario, y recibes el pedido en tu domicilio.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="faq2">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                ¿Qué obras sociales aceptan?
+                            </button>
+                        </h2>
+                        <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Cada farmacia acepta diferentes obras sociales. Puedes ver las obras sociales aceptadas en la información de cada farmacia.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="faq3">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                ¿Cuánto tiempo tarda la entrega?
+                            </button>
+                        </h2>
+                        <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                El tiempo de entrega depende de la farmacia y la zona, pero generalmente es entre 1-3 horas.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

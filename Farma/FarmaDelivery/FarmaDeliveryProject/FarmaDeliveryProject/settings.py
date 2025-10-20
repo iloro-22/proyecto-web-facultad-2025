@@ -131,4 +131,34 @@ LOGIN_REDIRECT_URL = '/'
 
 # 2. URL a donde enviar al usuario DESPUÉS de un Logout.
 # Aquí lo redirigimos de vuelta a la página de login para que pueda iniciar sesión de nuevo.
-LOGOUT_REDIRECT_URL = '/accounts/login/'            
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+# Configuración de Email
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Para desarrollo
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Para producción
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'tu-email@gmail.com'  # Cambiar por tu email
+EMAIL_HOST_PASSWORD = 'tu-password'  # Cambiar por tu password
+DEFAULT_FROM_EMAIL = 'FarmaDelivery <noreply@farmadelivery.com>'
+
+# Configuración de archivos estáticos y media
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Configuración de sesiones
+SESSION_COOKIE_AGE = 86400  # 24 horas
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Configuración de seguridad (para desarrollo)
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# Configuración de autenticación
+AUTHENTICATION_BACKENDS = [
+    'core.auth_backends.DNIAuthBackend',  # Permite login con DNI
+    'django.contrib.auth.backends.ModelBackend',  # Backend por defecto
+]            

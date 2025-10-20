@@ -1,0 +1,178 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Buscar Productos - FarmaDelivery{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Buscar Medicamentos</h1>
+    <p>Encuentra el medicamento que necesitas en nuestras farmacias asociadas</p>
+    
+    <form method="get" class="search-bar">
+        <input type="text" name="busqueda" placeholder="Buscar medicamentos..." value="{{ form.busqueda.value|default:'' }}">
+        <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+    </form>
+</section>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-filter"></i> Filtros</h5>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label for="busqueda" class="form-label">Buscar</label>
+                        <input type="text" class="form-control" name="busqueda" value="{{ form.busqueda.value|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="categoria" class="form-label">Categoría</label>
+                        <input type="text" class="form-control" name="categoria" value="{{ form.categoria.value|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="farmacia" class="form-label">Farmacia</label>
+                        <select class="form-control" name="farmacia">
+                            <option value="">Todas las farmacias</option>
+                            {% for farmacia in form.farmacia.field.queryset %}
+                            <option value="{{ farmacia.id }}" {% if form.farmacia.value == farmacia.id %}selected{% endif %}>
+                                {{ farmacia.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Aplicar Filtros
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="section-title mb-0">
+                <i class="fas fa-tablets"></i> Resultados
+                {% if total_resultados %}
+                <span class="badge bg-primary">{{ total_resultados }} productos</span>
+                {% endif %}
+                {% if filtro_distancia %}
+                <span class="badge bg-success">Cercanos (hasta 2km)</span>
+                {% endif %}
+            </h2>
+        </div>
+        
+        {% if not filtro_distancia %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <strong>Tip:</strong> Completa tu dirección en tu perfil para ver solo farmacias cercanas (hasta 2km).
+            <a href="{% url 'perfil_cliente' %}" class="alert-link">Completar perfil</a>
+        </div>
+        {% endif %}
+        
+        {% if productos %}
+        <div class="products-grid">
+            {% for item in productos %}
+            <div class="product-card">
+                <div class="product-image">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">{{ item.producto.nombre }}</h3>
+                    <p class="product-description">{{ item.producto.descripcion|truncatewords:15 }}</p>
+                    
+                    <div class="product-meta">
+                        <div>
+                            <span class="product-price">${{ item.producto.precio_base }}</span>
+                            {% if item.producto.categoria %}
+                            <br><small class="text-muted">{{ item.producto.categoria }}</small>
+                            {% endif %}
+                            {% if item.producto.laboratorio %}
+                            <br><small class="text-muted">{{ item.producto.laboratorio }}</small>
+                            {% endif %}
+                        </div>
+                        <span class="stock-status {% if item.producto.stock_disponible > 10 %}in-stock{% elif item.producto.stock_disponible > 0 %}low-stock{% else %}no-stock{% endif %}">
+                            {% if item.producto.stock_disponible > 10 %}Disponible{% elif item.producto.stock_disponible > 0 %}Poco Stock{% else %}Sin Stock{% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <i class="fas fa-store"></i> {{ item.producto.farmacia.nombre }}
+                        </small>
+                        {% if item.distancia %}
+                        <br><small class="text-success">
+                            <i class="fas fa-map-marker-alt"></i> {{ item.distancia }} km
+                        </small>
+                        {% endif %}
+                        {% if item.producto.requiere_receta %}
+                        <br><small class="text-warning">
+                            <i class="fas fa-file-prescription"></i> Requiere receta
+                        </small>
+                        {% endif %}
+                    </div>
+                    
+                    {% if item.producto.stock_disponible > 0 %}
+                    <a href="{% url 'detalle_producto' item.producto.id %}" class="btn btn-success w-100 mt-2">
+                        <i class="fas fa-shopping-cart"></i> Ver Detalles
+                    </a>
+                    {% else %}
+                    <button class="btn btn-secondary w-100 mt-2" disabled>
+                        <i class="fas fa-times"></i> Sin Stock
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Paginación -->
+        {% if productos.has_other_pages %}
+        <nav aria-label="Paginación de productos">
+            <ul class="pagination justify-content-center">
+                {% if productos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ productos.previous_page_number }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.farmacia %}&farmacia={{ request.GET.farmacia }}{% endif %}">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in productos.paginator.page_range %}
+                {% if productos.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > productos.number|add:'-3' and num < productos.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.farmacia %}&farmacia={{ request.GET.farmacia }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if productos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ productos.next_page_number }}{% if request.GET.busqueda %}&busqueda={{ request.GET.busqueda }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.farmacia %}&farmacia={{ request.GET.farmacia }}{% endif %}">
+                        Siguiente <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h3>No se encontraron productos</h3>
+            <p class="text-muted">Intenta con otros términos de búsqueda o ajusta los filtros.</p>
+            <a href="{% url 'buscar_productos' %}" class="btn btn-primary">
+                <i class="fas fa-refresh"></i> Limpiar Filtros
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

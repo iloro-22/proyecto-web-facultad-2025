@@ -1,0 +1,280 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Pedido #{{ pedido.numero_pedido }} - FarmaDelivery{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Pedido #{{ pedido.numero_pedido }}</h1>
+    <p>Detalles y seguimiento de tu pedido</p>
+</section>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalles del Pedido</h4>
+                <span class="badge status-{{ pedido.estado|lower }} fs-6">{{ pedido.get_estado_display }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-store"></i> Farmacia</h6>
+                        <p class="mb-1"><strong>{{ pedido.farmacia.nombre }}</strong></p>
+                        <p class="text-muted mb-0">{{ pedido.farmacia.direccion }}</p>
+                        <p class="text-muted mb-0">{{ pedido.farmacia.telefono }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-map-marker-alt"></i> Dirección de Entrega</h6>
+                        <p class="text-muted mb-0">{{ pedido.direccion_entrega }}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6><i class="fas fa-shopping-cart"></i> Productos</h6>
+                {% for detalle in pedido.detalles.all %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>{{ detalle.producto.nombre }}</strong>
+                        {% if detalle.producto.descripcion %}
+                        <br><small class="text-muted">{{ detalle.producto.descripcion }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-center">
+                        <span class="badge bg-secondary">{{ detalle.cantidad }} unidad{{ detalle.cantidad|pluralize }}</span>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <span class="text-muted">${{ detalle.precio_unitario }}</span>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <strong>${{ detalle.subtotal }}</strong>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <strong>Subtotal:</strong>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <strong>${{ pedido.subtotal }}</strong>
+                    </div>
+                </div>
+                
+                {% if pedido.descuento_total > 0 %}
+                <div class="row">
+                    <div class="col-md-8">
+                        <span class="text-success">Descuento aplicado:</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="text-success">-${{ pedido.descuento_total }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5><strong>Total:</strong></h5>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <h5 class="text-success"><strong>${{ pedido.total }}</strong></h5>
+                    </div>
+                </div>
+                
+                {% if pedido.observaciones %}
+                <hr>
+                <h6><i class="fas fa-comment"></i> Observaciones</h6>
+                <p class="text-muted">{{ pedido.observaciones }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Timeline del pedido -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Historial del Pedido</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item {% if pedido.estado == 'PENDIENTE' %}active{% endif %}">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <h6>Pedido Pendiente</h6>
+                            <p class="text-muted mb-0">Tu pedido está siendo revisado por la farmacia</p>
+                            <small class="text-muted">{{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item {% if pedido.estado == 'CONFIRMADO' %}active{% endif %}">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6>Pedido Confirmado</h6>
+                            <p class="text-muted mb-0">La farmacia ha confirmado tu pedido</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item {% if pedido.estado == 'PREPARANDO' %}active{% endif %}">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6>Preparando Pedido</h6>
+                            <p class="text-muted mb-0">La farmacia está preparando tu pedido</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item {% if pedido.estado == 'LISTO' %}active{% endif %}">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6>Listo para Entrega</h6>
+                            <p class="text-muted mb-0">Tu pedido está listo y esperando al repartidor</p>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item {% if pedido.estado == 'EN_CAMINO' %}active{% endif %}">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <h6>En Camino</h6>
+                            <p class="text-muted mb-0">El repartidor está en camino a tu domicilio</p>
+                            {% if pedido.repartidor %}
+                            <small class="text-muted">Repartidor: {{ pedido.repartidor.user.get_full_name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-item {% if pedido.estado == 'ENTREGADO' %}active{% endif %}">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6>Entregado</h6>
+                            <p class="text-muted mb-0">Tu pedido ha sido entregado exitosamente</p>
+                            {% if pedido.fecha_entrega_real %}
+                            <small class="text-muted">{{ pedido.fecha_entrega_real|date:"d/m/Y H:i" }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if pedido.estado == 'CANCELADO' %}
+                    <div class="timeline-item active">
+                        <div class="timeline-marker bg-danger"></div>
+                        <div class="timeline-content">
+                            <h6>Pedido Cancelado</h6>
+                            <p class="text-muted mb-0">Tu pedido ha sido cancelado</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información del Pedido</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Número de Pedido:</strong><br>
+                    <span class="text-muted">{{ pedido.numero_pedido }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Fecha de Creación:</strong><br>
+                    <span class="text-muted">{{ pedido.fecha_creacion|date:"d/m/Y H:i" }}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Última Actualización:</strong><br>
+                    <span class="text-muted">{{ pedido.fecha_actualizacion|date:"d/m/Y H:i" }}</span>
+                </div>
+                
+                {% if pedido.fecha_entrega_estimada %}
+                <div class="mb-3">
+                    <strong>Entrega Estimada:</strong><br>
+                    <span class="text-info">{{ pedido.fecha_entrega_estimada|date:"d/m/Y H:i" }}</span>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <strong>Método de Pago:</strong><br>
+                    <span class="text-muted">{{ pedido.get_metodo_pago_display }}</span>
+                </div>
+                
+                {% if pedido.repartidor %}
+                <div class="mb-3">
+                    <strong>Repartidor:</strong><br>
+                    <span class="text-muted">{{ pedido.repartidor.user.get_full_name }}</span>
+                    {% if pedido.repartidor.telefono %}
+                    <br><small class="text-muted">{{ pedido.repartidor.telefono }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-headset"></i> Soporte</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">¿Tienes alguna consulta sobre tu pedido?</p>
+                <a href="{% url 'contacto' %}" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-envelope"></i> Contactar Soporte
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 20px;
+    width: 2px;
+    height: calc(100% + 10px);
+    background-color: #e9ecef;
+}
+
+.timeline-item.active:not(:last-child)::before {
+    background-color: #007bff;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-item.active .timeline-marker {
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.timeline-content h6 {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.timeline-content p {
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}
