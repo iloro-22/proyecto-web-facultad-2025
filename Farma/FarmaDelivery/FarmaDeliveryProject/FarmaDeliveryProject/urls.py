@@ -38,5 +38,3 @@ urlpatterns = [
     path('registro/farmacia/', core_views.farmacia_signup, name='farmacia_signup'),
     path('registro/repartidor/', core_views.repartidor_signup, name='repartidor_signup'),
 ]
-
-#if (DEBUG=True)
