@@ -1,0 +1,196 @@
+<!-- Modal Detalle Pedido -->
+<div class="pedido-detalle">
+    <div class="detalle-header">
+        <div class="pedido-info">
+            <h3 class="pedido-numero">#{{ pedido.numero_pedido }}</h3>
+            <p class="cliente-info">
+                <i class="fas fa-user"></i>
+                {{ pedido.cliente.user.get_full_name }}
+            </p>
+            <p class="fecha-pedido">
+                <i class="fas fa-calendar"></i>
+                {{ pedido.fecha_creacion|date:"d/m/Y H:i" }}
+            </p>
+        </div>
+        <div class="pedido-estado">
+            <span class="estado-badge {{ pedido.estado|lower }}">
+                {{ pedido.get_estado_display }}
+            </span>
+        </div>
+    </div>
+
+    <div class="detalle-content">
+        <!-- Información del Cliente -->
+        <div class="info-section">
+            <h4><i class="fas fa-user-circle"></i> Información del Cliente</h4>
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Nombre:</label>
+                    <span>{{ pedido.cliente.user.get_full_name }}</span>
+                </div>
+                <div class="info-item">
+                    <label>DNI:</label>
+                    <span>{{ pedido.cliente.dni }}</span>
+                </div>
+                <div class="info-item">
+                    <label>Teléfono:</label>
+                    <span>{{ pedido.cliente.telefono|default:"No especificado" }}</span>
+                </div>
+                {% if pedido.cliente.obra_social %}
+                <div class="info-item">
+                    <label>Obra Social:</label>
+                    <span>{{ pedido.cliente.obra_social.nombre }} - {{ pedido.cliente.obra_social.plan }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Productos del Pedido -->
+        <div class="info-section">
+            <h4><i class="fas fa-pills"></i> Productos del Pedido</h4>
+            <div class="productos-lista">
+                {% for detalle in detalles %}
+                <div class="producto-item">
+                    <div class="producto-info">
+                        <h5>{{ detalle.producto.nombre }}</h5>
+                        <p class="laboratorio">{{ detalle.producto.laboratorio }}</p>
+                        <p class="codigo-barras">Código: {{ detalle.producto.codigo_barras|default:"N/A" }}</p>
+                    </div>
+                    <div class="producto-cantidad">
+                        <span class="cantidad">{{ detalle.cantidad }}</span>
+                        <span class="unidad">unidad{{ detalle.cantidad|pluralize:"es" }}</span>
+                    </div>
+                    <div class="producto-precio">
+                        <span class="precio-unitario">${{ detalle.precio_unitario }}</span>
+                        {% if detalle.descuento_aplicado > 0 %}
+                        <span class="descuento">- ${{ detalle.descuento_aplicado }}</span>
+                        {% endif %}
+                        <span class="subtotal">${{ detalle.subtotal }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Información de Pago -->
+        <div class="info-section">
+            <h4><i class="fas fa-credit-card"></i> Información de Pago</h4>
+            <div class="pago-info">
+                <div class="pago-item">
+                    <label>Método de Pago:</label>
+                    <span>{{ pedido.get_metodo_pago_display }}</span>
+                </div>
+                <div class="pago-item">
+                    <label>Subtotal:</label>
+                    <span>${{ pedido.subtotal }}</span>
+                </div>
+                {% if pedido.descuento_total > 0 %}
+                <div class="pago-item descuento">
+                    <label>Descuento:</label>
+                    <span>- ${{ pedido.descuento_total }}</span>
+                </div>
+                {% endif %}
+                <div class="pago-item total">
+                    <label>Total:</label>
+                    <span>${{ pedido.total }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dirección de Entrega -->
+        <div class="info-section">
+            <h4><i class="fas fa-map-marker-alt"></i> Dirección de Entrega</h4>
+            <div class="direccion-info">
+                <p>{{ pedido.direccion_entrega.calle }} {{ pedido.direccion_entrega.numero }}</p>
+                <p>{{ pedido.direccion_entrega.ciudad }}, {{ pedido.direccion_entrega.provincia }}</p>
+                <p>Código Postal: {{ pedido.direccion_entrega.codigo_postal }}</p>
+            </div>
+        </div>
+
+        <!-- Receta Digital -->
+        {% if receta %}
+        <div class="info-section">
+            <h4><i class="fas fa-file-medical"></i> Receta Digital</h4>
+            <div class="receta-info">
+                <div class="receta-preview">
+                    {% if receta.extension_archivo == 'pdf' %}
+                        <i class="fas fa-file-pdf"></i>
+                    {% elif receta.extension_archivo in 'jpg,jpeg,png,gif' %}
+                        <i class="fas fa-file-image"></i>
+                    {% else %}
+                        <i class="fas fa-file"></i>
+                    {% endif %}
+                    <span>Receta médica adjunta</span>
+                    {% if receta.validada_por_farmacia %}
+                        <span class="receta-validada">
+                            <i class="fas fa-check-circle"></i>
+                            Validada
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="receta-actions">
+                    <button class="btn btn-outline-primary btn-sm ver-receta" data-receta-url="{{ receta.archivo_url }}">
+                        <i class="fas fa-eye"></i>
+                        Ver Receta
+                    </button>
+                    {% if receta.archivo_url %}
+                        <a href="{{ receta.archivo_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-download"></i>
+                            Descargar
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% if receta.observaciones_receta %}
+            <div class="receta-observaciones">
+                <h5>Observaciones:</h5>
+                <p>{{ receta.observaciones_receta }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% elif pedido.detalles.first.producto.requiere_receta %}
+        <div class="info-section">
+            <h4><i class="fas fa-exclamation-triangle"></i> Receta Requerida</h4>
+            <div class="receta-faltante">
+                <p>Este producto requiere receta médica pero no se ha adjuntado ninguna.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Observaciones -->
+        {% if pedido.observaciones %}
+        <div class="info-section">
+            <h4><i class="fas fa-sticky-note"></i> Observaciones</h4>
+            <div class="observaciones">
+                <p>{{ pedido.observaciones }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Acciones del Pedido -->
+    <div class="detalle-actions">
+        {% if pedido.estado == 'PENDIENTE' %}
+        <button class="btn btn-success confirmar-receta" data-pedido-id="{{ pedido.id }}">
+            <i class="fas fa-check-circle"></i>
+            Confirmar Receta y Preparar
+        </button>
+        <button class="btn btn-danger cancelar-receta" data-pedido-id="{{ pedido.id }}">
+            <i class="fas fa-times-circle"></i>
+            Receta Inválida (Cancelar)
+        </button>
+        {% elif pedido.estado == 'PREPARANDO' %}
+        {% if pedido.metodo_pago == 'EFECTIVO' %}
+        <button class="btn btn-primary listo-retiro" data-pedido-id="{{ pedido.id }}">
+            <i class="fas fa-hand-holding"></i>
+            Listo para Retirar
+        </button>
+        {% else %}
+        <button class="btn btn-primary entregar-repartidor" data-pedido-id="{{ pedido.id }}">
+            <i class="fas fa-truck"></i>
+            Entregado al Repartidor
+        </button>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>

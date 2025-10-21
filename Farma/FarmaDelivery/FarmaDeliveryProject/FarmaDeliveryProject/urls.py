@@ -27,6 +27,18 @@ urlpatterns = [
     path('repartidor/', core_views.panel_repartidor, name='panel_repartidor'),
     path('repartidor/aceptar/<int:pedido_id>/', core_views.aceptar_pedido, name='aceptar_pedido'),
     
+    # URLs para farmacéuticos
+    path('farmacia/', core_views.panel_farmacia, name='panel_farmacia'),
+    path('farmacia/pedido/<int:pedido_id>/', core_views.detalle_pedido_farmacia, name='detalle_pedido_farmacia'),
+    path('farmacia/pedido/<int:pedido_id>/confirmar-receta/', core_views.confirmar_receta_preparar, name='confirmar_receta_preparar'),
+    path('farmacia/pedido/<int:pedido_id>/cancelar-receta/', core_views.cancelar_pedido_receta, name='cancelar_pedido_receta'),
+    path('farmacia/pedido/<int:pedido_id>/entregar-repartidor/', core_views.entregar_al_repartidor, name='entregar_al_repartidor'),
+    path('farmacia/pedido/<int:pedido_id>/listo-retiro/', core_views.listo_para_retiro, name='listo_para_retiro'),
+    path('farmacia/inventario/', core_views.inventario_farmacia, name='inventario_farmacia'),
+    path('farmacia/inventario/producto/<int:producto_id>/actualizar-stock/', core_views.actualizar_stock, name='actualizar_stock'),
+    path('farmacia/precios/', core_views.configuracion_precios, name='configuracion_precios'),
+    path('farmacia/cuenta/', core_views.configuracion_cuenta_farmacia, name='configuracion_cuenta_farmacia'),
+    
     # API endpoints
     path('api/geocodificar/', core_views.geocodificar_direccion, name='geocodificar_direccion'),
     path('api/ubicacion/', core_views.actualizar_ubicacion_repartidor, name='actualizar_ubicacion_repartidor'),
