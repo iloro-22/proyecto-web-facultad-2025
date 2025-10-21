@@ -1,252 +1,195 @@
-{% extends 'core/base.html' %}
-
-{% block title %}Panel Repartidor - FarmaDelivery{% endblock %}
-
-{% block extra_js %}
-<script>
-    let watchId = null;
-    let isTracking = false;
-
-    function iniciarSeguimiento() {
-        if (!navigator.geolocation) {
-            alert('La geolocalización no está soportada por este navegador.');
-            return;
-        }
-
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        };
-
-        watchId = navigator.geolocation.watchPosition(
-            function(position) {
-                const latitud = position.coords.latitude;
-                const longitud = position.coords.longitude;
-                
-                // Actualizar ubicación en el servidor
-                actualizarUbicacion(latitud, longitud);
-                
-                // Actualizar indicador visual
-                document.getElementById('status-indicator').innerHTML = 
-                    '<i class="fas fa-circle text-success"></i> Conectado';
-                document.getElementById('status-indicator').className = 'text-success';
-            },
-            function(error) {
-                console.error('Error de geolocalización:', error);
-                document.getElementById('status-indicator').innerHTML = 
-                    '<i class="fas fa-circle text-danger"></i> Error de ubicación';
-                document.getElementById('status-indicator').className = 'text-danger';
-            },
-            options
-        );
-
-        isTracking = true;
-        document.getElementById('btn-seguimiento').innerHTML = 
-            '<i class="fas fa-stop"></i> Detener Seguimiento';
-        document.getElementById('btn-seguimiento').className = 'btn btn-danger';
-    }
-
-    function detenerSeguimiento() {
-        if (watchId) {
-            navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-        }
-        
-        isTracking = false;
-        document.getElementById('btn-seguimiento').innerHTML = 
-            '<i class="fas fa-play"></i> Iniciar Seguimiento';
-        document.getElementById('btn-seguimiento').className = 'btn btn-success';
-        
-        document.getElementById('status-indicator').innerHTML = 
-            '<i class="fas fa-circle text-warning"></i> Desconectado';
-        document.getElementById('status-indicator').className = 'text-warning';
-    }
-
-    function actualizarUbicacion(latitud, longitud) {
-        const formData = new FormData();
-        formData.append('latitud', latitud);
-        formData.append('longitud', longitud);
-        
-        fetch('{% url "actualizar_ubicacion_repartidor" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Actualizar contador de pedidos cercanos
-                const contador = document.getElementById('pedidos-cercanos-count');
-                if (contador) {
-                    contador.textContent = data.pedidos_cercanos;
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error actualizando ubicación:', error);
-        });
-    }
-
-    function toggleSeguimiento() {
-        if (isTracking) {
-            detenerSeguimiento();
-        } else {
-            iniciarSeguimiento();
-        }
-    }
-
-    // Actualizar la página cada 30 segundos para obtener nuevos pedidos
-    setInterval(function() {
-        if (isTracking) {
-            location.reload();
-        }
-    }, 30000);
-</script>
-{% endblock %}
-
-{% block content %}
-<section class="hero">
-    <h1><i class="fas fa-motorcycle"></i> Panel Repartidor</h1>
-    <p>Gestiona tus entregas y encuentra pedidos cercanos</p>
-</section>
-
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-user"></i> Información Personal</h5>
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Repartidor - FarmaDelivery</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{% static 'css/repartidor.css' %}">
+</head>
+<body>
+<div class="repartidor-container">
+    <!-- Header del Panel -->
+    <div class="repartidor-header">
+        <div class="header-content">
+            <div class="repartidor-info">
+                <h1 class="repartidor-title">
+                    <i class="fas fa-motorcycle"></i>
+                    Panel Repartidor
+                </h1>
+                <p class="repartidor-subtitle">{{ repartidor.user.get_full_name }} - Vehículo: {{ repartidor.vehiculo }}</p>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <strong>Nombre:</strong><br>
-                    <span class="text-muted">{{ repartidor.user.get_full_name }}</span>
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <span class="status-dot {% if repartidor.activo %}online{% else %}offline{% endif %}"></span>
+                    <span class="status-text">{% if repartidor.activo %}En línea{% else %}Desconectado{% endif %}</span>
                 </div>
-                
-                <div class="mb-3">
-                    <strong>DNI:</strong><br>
-                    <span class="text-muted">{{ repartidor.dni }}</span>
+                <div class="user-menu">
+                    <span class="user-name">{{ repartidor.user.get_full_name }}</span>
+                    <i class="fas fa-user-circle"></i>
                 </div>
-                
-                <div class="mb-3">
-                    <strong>Teléfono:</strong><br>
-                    <span class="text-muted">{{ repartidor.telefono }}</span>
+                <div class="logout-section">
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Cerrar Sesión
+                    </a>
                 </div>
-                
-                <div class="mb-3">
-                    <strong>Vehículo:</strong><br>
-                    <span class="text-muted">{{ repartidor.vehiculo|default:"No especificado" }}</span>
-                </div>
-                
-                {% if repartidor.patente %}
-                <div class="mb-3">
-                    <strong>Patente:</strong><br>
-                    <span class="text-muted">{{ repartidor.patente }}</span>
-                </div>
-                {% endif %}
-                
-                <div class="mb-3">
-                    <strong>Estado:</strong><br>
-                    <span id="status-indicator" class="{% if esta_disponible %}text-success{% else %}text-warning{% endif %}">
-                        <i class="fas fa-circle"></i> 
-                        {% if esta_disponible %}Disponible{% else %}Desconectado{% endif %}
-                    </span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Ubicación</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    Activa el seguimiento de ubicación para recibir pedidos cercanos.
-                </p>
-                
-                <button id="btn-seguimiento" class="btn {% if esta_disponible %}btn-danger{% else %}btn-success{% endif %} w-100" onclick="toggleSeguimiento()">
-                    <i class="fas fa-{% if esta_disponible %}stop{% else %}play{% endif %}"></i> 
-                    {% if esta_disponible %}Detener{% else %}Iniciar{% endif %} Seguimiento
-                </button>
-                
-                {% if repartidor.ultima_actualizacion_ubicacion %}
-                <div class="mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-clock"></i> Última actualización:<br>
-                        {{ repartidor.ultima_actualizacion_ubicacion|date:"d/m/Y H:i" }}
-                    </small>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
-    
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-shopping-cart"></i> Pedidos Cercanos
-                    <span id="pedidos-cercanos-count" class="badge bg-primary">{{ pedidos_cercanos|length }}</span>
-                </h5>
-                <small class="text-muted">Radio: 2km</small>
+
+    <!-- Navegación por Pestañas -->
+    <div class="repartidor-tabs">
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-tab="disponibles">
+                <i class="fas fa-list"></i>
+                Pedidos Disponibles
+            </button>
+            <button class="tab-btn" data-tab="activos">
+                <i class="fas fa-tasks"></i>
+                Pedidos Activos
+            </button>
+            <button class="tab-btn" data-tab="cuenta">
+                <i class="fas fa-user-cog"></i>
+                Mi Cuenta
+            </button>
+        </nav>
+    </div>
+
+    <!-- Contenido de las Pestañas -->
+    <div class="tab-content">
+        <!-- Pestaña: Pedidos Disponibles -->
+        <div class="tab-pane active" id="disponibles">
+            <div class="section-header">
+                <h2><i class="fas fa-list"></i> Pedidos Disponibles</h2>
+                <p>Selecciona un pedido para ver los detalles y aceptarlo</p>
             </div>
-            <div class="card-body">
-                {% if pedidos_cercanos %}
+            
+            <div class="pedidos-grid" id="pedidos-disponibles">
+                <!-- Los pedidos se cargarán dinámicamente aquí -->
+            </div>
+        </div>
+
+        <!-- Pestaña: Pedidos Activos -->
+        <div class="tab-pane" id="activos">
+            <div class="section-header">
+                <h2><i class="fas fa-tasks"></i> Pedidos Activos</h2>
+                <p>Gestiona tus pedidos en curso</p>
+            </div>
+            
+            <div class="pedidos-activos" id="pedidos-activos">
+                <!-- Los pedidos activos se cargarán dinámicamente aquí -->
+            </div>
+        </div>
+
+        <!-- Pestaña: Mi Cuenta -->
+        <div class="tab-pane" id="cuenta">
+            <div class="section-header">
+                <h2><i class="fas fa-user-cog"></i> Mi Cuenta</h2>
+                <p>Gestiona tu información personal y de vehículo</p>
+            </div>
+            
+            <div class="account-content">
                 <div class="row">
-                    {% for item in pedidos_cercanos %}
-                    <div class="col-md-6 mb-3">
-                        <div class="card border-primary">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title mb-0">Pedido #{{ item.pedido.numero_pedido }}</h6>
-                                    <span class="badge bg-success">{{ item.distancia }} km</span>
+                    <div class="col-md-6">
+                        <div class="account-section">
+                            <h3><i class="fas fa-user"></i> Información Personal</h3>
+                            <form id="personal-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre Completo</label>
+                                    <input type="text" class="form-control" id="nombre" value="{{ repartidor.user.get_full_name }}">
                                 </div>
-                                
-                                <p class="card-text">
-                                    <strong>Cliente:</strong> {{ item.pedido.cliente.user.get_full_name }}<br>
-                                    <strong>Farmacia:</strong> {{ item.pedido.farmacia.nombre }}<br>
-                                    <strong>Total:</strong> ${{ item.pedido.total }}<br>
-                                    <strong>Dirección:</strong> {{ item.pedido.direccion_entrega }}
-                                </p>
-                                
-                                <div class="d-flex gap-2">
-                                    <a href="{% url 'aceptar_pedido' item.pedido.id %}" class="btn btn-primary btn-sm">
-                                        <i class="fas fa-check"></i> Aceptar
-                                    </a>
-                                    <a href="{% url 'seguimiento_pedido' item.pedido.id %}" class="btn btn-outline-info btn-sm">
-                                        <i class="fas fa-eye"></i> Ver Detalles
-                                    </a>
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" value="{{ repartidor.user.email }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Teléfono</label>
+                                    <input type="tel" class="form-control" id="telefono" value="{{ repartidor.telefono }}">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar Cambios
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="account-section">
+                            <h3><i class="fas fa-motorcycle"></i> Información del Vehículo</h3>
+                            <form id="vehiculo-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de Vehículo</label>
+                                    <input type="text" class="form-control" id="vehiculo" value="{{ repartidor.vehiculo }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Patente/Matrícula</label>
+                                    <input type="text" class="form-control" id="patente" value="{{ repartidor.patente }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Zona de Cobertura</label>
+                                    <input type="text" class="form-control" id="zona_cobertura" value="{{ repartidor.zona_cobertura }}">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar Cambios
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="account-section">
+                            <h3><i class="fas fa-info-circle"></i> Información Adicional</h3>
+                            <div class="mb-3">
+                                <label class="form-label">DNI</label>
+                                <input type="text" class="form-control" value="{{ repartidor.dni }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Estado</label>
+                                <div class="verification-status">
+                                    <span class="badge {% if repartidor.activo %}bg-success{% else %}bg-warning{% endif %}">
+                                        {% if repartidor.activo %}
+                                            <i class="fas fa-check"></i> Activo
+                                        {% else %}
+                                            <i class="fas fa-clock"></i> Inactivo
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                    <h5>No hay pedidos cercanos</h5>
-                    <p class="text-muted">
-                        {% if esta_disponible %}
-                        No hay pedidos disponibles dentro de 2km de tu ubicación actual.
-                        {% else %}
-                        Activa el seguimiento de ubicación para recibir pedidos cercanos.
-                        {% endif %}
-                    </p>
-                </div>
-                {% endif %}
             </div>
         </div>
-        
-        {% if not esta_disponible %}
-        <div class="alert alert-warning mt-3">
-            <i class="fas fa-exclamation-triangle"></i>
-            <strong>Importante:</strong> Para recibir pedidos, necesitas activar el seguimiento de ubicación.
-            Los pedidos solo aparecerán si tu ubicación se ha actualizado en los últimos 10 minutos.
-        </div>
-        {% endif %}
     </div>
 </div>
-{% endblock %}
+
+<!-- Modal para Detalle de Pedido -->
+<div class="modal" id="pedido-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Detalle del Pedido</h3>
+            <button class="modal-close" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="modal-body">
+            <!-- Contenido cargado dinámicamente -->
+        </div>
+    </div>
+</div>
+
+<!-- Toast para Notificaciones -->
+<div class="toast-container" id="toast-container">
+    <!-- Toasts aparecerán aquí dinámicamente -->
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/repartidor.js' %}"></script>
+</body>
+</html>

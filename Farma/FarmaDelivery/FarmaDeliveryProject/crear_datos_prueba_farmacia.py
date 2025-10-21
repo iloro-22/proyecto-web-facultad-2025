@@ -144,6 +144,96 @@ def crear_datos_prueba():
             'laboratorio': 'Bayer',
             'requiere_receta': False,
             'stock_disponible': 30
+        },
+        {
+            'nombre': 'Diclofenac 50mg',
+            'descripcion': 'Antiinflamatorio y analgesico',
+            'precio_base': 180.00,
+            'codigo_barras': '7891234567896',
+            'categoria': 'Antiinflamatorios',
+            'laboratorio': 'Novartis',
+            'requiere_receta': False,
+            'stock_disponible': 20
+        },
+        {
+            'nombre': 'Loratadina 10mg',
+            'descripcion': 'Antihistaminico para alergias',
+            'precio_base': 90.00,
+            'codigo_barras': '7891234567897',
+            'categoria': 'Antialergicos',
+            'laboratorio': 'Schering',
+            'requiere_receta': False,
+            'stock_disponible': 40
+        },
+        {
+            'nombre': 'Metformina 500mg',
+            'descripcion': 'Antidiabetico oral',
+            'precio_base': 220.00,
+            'codigo_barras': '7891234567898',
+            'categoria': 'Antidiabeticos',
+            'laboratorio': 'Merck',
+            'requiere_receta': True,
+            'stock_disponible': 12
+        },
+        {
+            'nombre': 'Losartan 50mg',
+            'descripcion': 'Antihipertensivo',
+            'precio_base': 280.00,
+            'codigo_barras': '7891234567899',
+            'categoria': 'Cardiovasculares',
+            'laboratorio': 'MSD',
+            'requiere_receta': True,
+            'stock_disponible': 8
+        },
+        {
+            'nombre': 'Simvastatina 20mg',
+            'descripcion': 'Hipolipemiante',
+            'precio_base': 320.00,
+            'codigo_barras': '7891234567900',
+            'categoria': 'Cardiovasculares',
+            'laboratorio': 'Pfizer',
+            'requiere_receta': True,
+            'stock_disponible': 6
+        },
+        {
+            'nombre': 'Ciprofloxacina 500mg',
+            'descripcion': 'Antibiotico de amplio espectro',
+            'precio_base': 190.00,
+            'codigo_barras': '7891234567901',
+            'categoria': 'Antibioticos',
+            'laboratorio': 'Bayer',
+            'requiere_receta': True,
+            'stock_disponible': 10
+        },
+        {
+            'nombre': 'Cetirizina 10mg',
+            'descripcion': 'Antihistaminico de segunda generacion',
+            'precio_base': 85.00,
+            'codigo_barras': '7891234567902',
+            'categoria': 'Antialergicos',
+            'laboratorio': 'UCB',
+            'requiere_receta': False,
+            'stock_disponible': 35
+        },
+        {
+            'nombre': 'Ranitidina 150mg',
+            'descripcion': 'Antiulceroso y antisecretor',
+            'precio_base': 95.00,
+            'codigo_barras': '7891234567903',
+            'categoria': 'Gastrointestinales',
+            'laboratorio': 'GSK',
+            'requiere_receta': False,
+            'stock_disponible': 18
+        },
+        {
+            'nombre': 'Fluoxetina 20mg',
+            'descripcion': 'Antidepresivo inhibidor selectivo',
+            'precio_base': 350.00,
+            'codigo_barras': '7891234567904',
+            'categoria': 'Psiquiatricos',
+            'laboratorio': 'Lilly',
+            'requiere_receta': True,
+            'stock_disponible': 5
         }
     ]
     

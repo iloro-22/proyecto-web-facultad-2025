@@ -1,13 +1,19 @@
-{% extends 'core/base.html' %}
 {% load static %}
-
-{% block title %}Panel Farmacéutico - FarmaDelivery{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/farmacia.css' %}">
-{% endblock %}
-
-{% block content %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Farmacéutico - FarmaDelivery</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{% static 'css/farmacia.css' %}">
+</head>
+<body>
 <div class="farmacia-container">
     <!-- Header del Panel -->
     <div class="farmacia-header">
@@ -27,6 +33,12 @@
                 <div class="user-menu">
                     <span class="user-name">{{ farmacia.user.get_full_name }}</span>
                     <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="logout-section">
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Cerrar Sesión
+                    </a>
                 </div>
             </div>
         </div>
@@ -477,8 +489,9 @@
 <div class="toast-container" id="toast-container">
     <!-- Toasts aparecerán aquí dinámicamente -->
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'js/farmacia.js' %}"></script>
-{% endblock %}
+</body>
+</html>

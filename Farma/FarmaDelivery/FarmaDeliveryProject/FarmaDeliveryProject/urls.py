@@ -2,12 +2,16 @@
 
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth.views import LogoutView
 from core import views as core_views # Importamos la vista 'home_page' de tu app 'core'
+from core.auth_views import CustomLoginView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Esta línea activa las funciones de Login y Logout
-    path('accounts/', include('django.contrib.auth.urls')),
+    
+    # Login personalizado
+    path('accounts/login/', CustomLoginView.as_view(), name='login'),
+    path('accounts/logout/', LogoutView.as_view(next_page='home'), name='logout'),
     
     # URLs principales
     path('', core_views.home_page, name='home'),
