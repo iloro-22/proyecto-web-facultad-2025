@@ -334,6 +334,8 @@ def perfil_cliente(request):
     """Vista para editar perfil del cliente"""
     try:
         cliente = Cliente.objects.get(user=request.user)
+
+        pedidos_entregados_count = cliente.pedidos.filter(estado=EstadoPedido.ENTREGADO).count()
     except Cliente.DoesNotExist:
         # Crear cliente si no existe
         cliente = Cliente.objects.create(
@@ -347,6 +349,7 @@ def perfil_cliente(request):
                 codigo_postal='0000'
             )
         )
+        pedidos_entregados_count = 0
     
     if request.method == 'POST':
         form = PerfilClienteForm(request.POST, instance=cliente)
@@ -354,12 +357,14 @@ def perfil_cliente(request):
             form.save()
             messages.success(request, 'Perfil actualizado correctamente.')
             return redirect('perfil_cliente')
+        pass
     else:
         form = PerfilClienteForm(instance=cliente)
     
     context = {
         'cliente': cliente,
         'form': form,
+        'pedidos_entregados_count': pedidos_entregados_count,
     }
     return render(request, 'core/perfil_cliente.html', context)
 
