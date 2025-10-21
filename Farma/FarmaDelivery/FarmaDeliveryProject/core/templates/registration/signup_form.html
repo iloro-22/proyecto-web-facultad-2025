@@ -134,8 +134,7 @@
             <i class="fas fa-pills"></i>
             <h1>FarmaDelivery</h1>
         </div>
-        <h2 class="signup-title">{{ form_title|default:"Crear Cuenta" }}</h2>
-        <p class="signup-subtitle">{{ form_subtitle|default:"Completa tus datos para registrarte." }}</p>
+        <h2 class="signup-title">Registro de Cliente</h2>
 
         {% if form.non_field_errors %}
             <div class="alert alert-danger">
@@ -180,28 +179,24 @@
                 {% endif %}
             </div>
         
-            {% if user_type != 'Farmacia' and (form.first_name or form.last_name) %}
-                <div class="row g-3 mb-3">
-                    {% if form.first_name %}
-                    <div class="col-md-6">
-                        <div class="form-group text-start">
-                            <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }} {% if form.first_name.field.required %}<span class="required">*</span>{% endif %}</label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}<div class="errorlist">{{ form.first_name.errors }}</div>{% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-                    {% if form.last_name %}
-                    <div class="col-md-6">
-                        <div class="form-group text-start">
-                            <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }} {% if form.last_name.field.required %}<span class="required">*</span>{% endif %}</label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}<div class="errorlist">{{ form.last_name.errors }}</div>{% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
+           {% if user_type != 'Farmacia' %}
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="form-group text-start">
+                    <label for="{{ form.first_name.id_for_label }}">Nombre</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %} <div class="errorlist"> {% for error in form.first_name.errors %} {{ error }} {% endfor %} </div> {% endif %}
                 </div>
-            {% endif %}
+            </div>
+            <div class="col-md-6">
+                <div class="form-group text-start">
+                    <label for="{{ form.last_name.id_for_label }}">Apellido</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %} <div class="errorlist"> {% for error in form.last_name.errors %} {{ error }} {% endfor %} </div> {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
             <div class="row g-3 mb-3">
                 {% if form.password1 %}
@@ -354,7 +349,7 @@
                 </div>
             {% endif %}
         
-            <h3 style="margin: 30px 0 20px 0; color: var(--dark); text-align: left; border-top: 1px solid #eee; padding-top: 20px;">Dirección</h3>
+            <h3 style="margin: 30px 0 20px 0; color: var(--dark); text-align: left; border-top: 1px solid #eee; padding-top: 20px;">Domicilio</h3>
             <div class="row g-3 mb-3">
                 {% if form.calle %}
                 <div class="col-md-8">
@@ -390,7 +385,7 @@
                  {% if form.ciudad %}
                 <div class="col-md-4">
                     <div class="form-group text-start">
-                        <label for="{{ form.ciudad.id_for_label }}">Ciudad {% if form.ciudad.field.required %}<span class="required">*</span>{% endif %}</label>
+                        <label for="{{ form.ciudad.id_for_label }}">Localidad {% if form.ciudad.field.required %}<span class="required">*</span>{% endif %}</label>
                         {{ form.ciudad }}
                          {% if form.ciudad.errors %}<div class="errorlist">{{ form.ciudad.errors }}</div>{% endif %}
                     </div>
@@ -417,12 +412,12 @@
             </div>
         
             <button type="submit" class="btn-registro">
-                <i class="fas fa-user-plus"></i> Registrarse como {{ user_type }}
+                <i class="fas fa-user"></i> + Registrarse como Cliente
             </button>
         </form>
 
         <div class="back-link">
-            <p><a href="{% url 'login' %}"><i class="fas fa-arrow-left"></i> ¿Ya tienes cuenta? Inicia sesión</a></p>
+            <p><a href="{% url 'select_signup' %}"><i class="fas fa-arrow-left"></i> ← Volver a selección</a></p>
         </div>
 
     </div>
