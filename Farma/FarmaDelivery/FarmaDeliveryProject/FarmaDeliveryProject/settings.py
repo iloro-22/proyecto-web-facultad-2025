@@ -31,10 +31,10 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-  'django.contrib.admin',
-    'django.contrib.auth',       # <-- Debe estar aquí
+    'django.contrib.admin',
+    'django.contrib.auth',      # <-- Debe estar aquí
     'django.contrib.contenttypes',
-    'django.contrib.sessions',   # <-- Debe estar aquí
+    'django.contrib.sessions',  # <-- Debe estar aquí
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
@@ -101,13 +101,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+# https://docs.djangoproject.com/en/5.2/topics/i1n/
 
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
-USE_I18N = True
+USE_I1N = True
 
 USE_TZ = True
 
@@ -161,8 +161,4 @@ X_FRAME_OPTIONS = 'DENY'
 AUTHENTICATION_BACKENDS = [
     'core.auth_backends.DNIAuthBackend',  # Permite login con DNI
     'django.contrib.auth.backends.ModelBackend',  # Backend por defecto
-]            
-
-# Configuración de archivos multimedia (para la cédula del repartidor)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+]

@@ -1,14 +1,19 @@
 {% extends 'core/base.html' %}
-
-{% block title %}{{ producto.nombre }} - FarmaDelivery{% endblock %}
+{% load static %} {% block title %}{{ producto.nombre }} - FarmaDelivery{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-6">
         <div class="card">
-            <div class="product-image" style="height: 300px;">
-                <i class="fas fa-pills fa-5x"></i>
+            
+            <div class="product-image" style="height: 300px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa;">
+                {% if producto.imagen %}
+                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" style="width: 100%; height: 300px; object-fit: cover;">
+                {% else %}
+                    <i class="fas fa-pills fa-5x text-secondary"></i>
+                {% endif %}
             </div>
+            
         </div>
     </div>
     
@@ -39,9 +44,17 @@
                     </div>
                     <div class="col-6">
                         <strong>Stock:</strong><br>
+                        
                         <span class="badge {% if producto.stock_disponible > 10 %}bg-success{% elif producto.stock_disponible > 0 %}bg-warning{% else %}bg-danger{% endif %}">
-                            {{ producto.stock_disponible }} unidades
+                            {% if producto.stock_disponible > 10 %}
+                                Stock Disponible
+                            {% elif producto.stock_disponible > 0 %}
+                                Poco Stock
+                            {% else %}
+                                Sin Stock
+                            {% endif %}
                         </span>
+
                     </div>
                 </div>
                 
@@ -103,18 +116,20 @@
                 {% csrf_token %}
                 
                 <div class="row">
+
+                    {% if producto.requiere_receta %}
+                    
                     <div class="col-md-6">
                         <h5><i class="fas fa-file-upload"></i> Receta Médica</h5>
-                        {% if producto.requiere_receta %}
+                        
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i>
                             Este producto requiere receta médica. Por favor sube una foto o PDF de tu receta.
                         </div>
-                        {% endif %}
                         
                         <div class="mb-3">
                             <label for="{{ receta_form.archivo_receta.id_for_label }}" class="form-label">
-                                Archivo de Receta {% if producto.requiere_receta %}<span class="text-danger">*</span>{% endif %}
+                                Archivo de Receta <span class="text-danger">*</span>
                             </label>
                             {{ receta_form.archivo_receta }}
                             <div class="form-text">{{ receta_form.archivo_receta.help_text }}</div>
@@ -132,7 +147,14 @@
                     <div class="col-md-6">
                         <h5><i class="fas fa-map-marker-alt"></i> Dirección de Entrega</h5>
                         
-                        <div class="row">
+                    {% else %}
+
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-map-marker-alt"></i> Dirección de Entrega</h5>
+
+                    {% endif %}
+
+                    <div class="row">
                             <div class="col-md-8">
                                 <div class="mb-3">
                                     <label for="{{ direccion_form.calle.id_for_label }}" class="form-label">Calle</label>
@@ -174,7 +196,6 @@
                         </div>
                     </div>
                 </div>
-                
                 <hr>
                 
                 <div class="row">
@@ -260,7 +281,7 @@
                 </div>
                 <div class="col-md-6">
                     <h6>Horarios de Atención</h6>
-                    <p><i class="fas fa-clock"></i> {{ producto.farmacia.horario_apertura }} - {{ producto.farmacia.horario_cierre }}</p>
+                    <p><i class="fas fa-clock"></i> {{ producto.farmacia.horario_apertura }} - {{ producto.farmacia.horario_cierre }}</S>
                     
                     {% if producto.farmacia.obras_sociales_aceptadas.exists %}
                     <h6>Obras Sociales Aceptadas</h6>

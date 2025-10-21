@@ -231,6 +231,11 @@ class Repartidor(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
+    
+    # --- ¡CAMBIO AÑADIDO AQUÍ! ---
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True, verbose_name="Imagen del Producto")
+    # -----------------------------
+    
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
     codigo_barras = models.CharField(max_length=50, unique=True, blank=True)
     categoria = models.CharField(max_length=100, blank=True)
