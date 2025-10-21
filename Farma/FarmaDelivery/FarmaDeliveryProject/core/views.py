@@ -121,6 +121,58 @@ def buscar_productos(request):
     }
     return render(request, 'core/buscar_productos.html', context)
 
+
+
+def autocomplete_productos(request):
+    """
+    Vista para el autocompletado de productos.
+    Busca productos cuyo nombre contenga el término proporcionado.
+    """
+    if 'term' in request.GET:
+        term = request.GET.get('term').strip()
+        
+        # Validar que el término tenga al menos 2 caracteres
+        if len(term) < 2:
+            return JsonResponse([], safe=False)
+        
+        print(f"Buscando productos con término: '{term}'")  # Debug log
+        
+        # Empezamos el QuerySet base
+        productos_qs = Producto.objects.filter(
+            nombre__icontains=term,
+            activo=True
+        )
+
+        print(f"Productos encontrados antes de filtros: {productos_qs.count()}")  # Debug log
+
+        # --- Opcional: Filtrar por farmacias cercanas ANTES del slice ---
+        try:
+            # Asumiendo que el usuario está logueado y es un cliente
+            cliente = Cliente.objects.get(user=request.user)
+            direccion_cliente = cliente.direccion
+            if direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud:
+                farmacias_cercanas = Farmacia.farmacias_cercanas(direccion_cliente, radio_km=5) # Aumentamos el radio
+                farmacias_ids = [f['farmacia'].id for f in farmacias_cercanas]
+                print(f"Farmacias cercanas encontradas: {len(farmacias_ids)}")  # Debug log
+                # Aplicamos el filtro AHORA
+                productos_qs = productos_qs.filter(farmacia_id__in=farmacias_ids)
+                print(f"Productos después de filtrar por cercanía: {productos_qs.count()}")  # Debug log
+        except Cliente.DoesNotExist:
+             # Si no es cliente o no tiene dirección, no filtramos por cercanía
+             print("Usuario no es cliente o no tiene dirección")  # Debug log
+             pass
+        # --- Fin Opcional ---
+
+        # Aplicamos values_list, distinct y el slice AL FINAL
+        lista_nombres = list(
+            productos_qs.values_list('nombre', flat=True).distinct()[:10]
+        )
+        
+        print(f"Sugerencias finales: {lista_nombres}")  # Debug log
+        return JsonResponse(lista_nombres, safe=False)
+
+    return JsonResponse([], safe=False)
+
 # Vista de detalle del producto
 @login_required
 def detalle_producto(request, producto_id):

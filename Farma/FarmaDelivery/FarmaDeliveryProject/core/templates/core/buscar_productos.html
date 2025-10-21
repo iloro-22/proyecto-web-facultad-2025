@@ -7,10 +7,22 @@
     <h1>Buscar Medicamentos</h1>
     <p>Encuentra el medicamento que necesitas en nuestras farmacias asociadas</p>
     
-    <form method="get" class="search-bar">
-        <input type="text" name="busqueda" placeholder="Buscar medicamentos..." value="{{ form.busqueda.value|default:'' }}">
-        <button type="submit"><i class="fas fa-search"></i> Buscar</button>
-    </form>
+    {# Modifica este <form> dentro de buscar_productos.html #}
+        <form method="get" action="{% url 'buscar_productos' %}" class="search-bar" style="position: relative;"> {# Añade position: relative y la action por si acaso #}
+            <input type="text"
+                   name="busqueda"
+                   placeholder="Buscar medicamentos..."
+                   value="{{ form.busqueda.value|default:'' }}"
+                   id="busqueda-medicamento" {# <--- AÑADE ESTE ID #}
+                   autocomplete="off"> {# <--- AÑADE ESTE ATTRIBUTO #}
+            <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+        
+            {# --- AÑADE ESTE DIV --- #}
+            <div id="sugerencias-busqueda" class="list-group" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background-color: white;">
+                {# Las sugerencias se cargarán aquí con JavaScript #}
+            </div>
+            {# --- FIN DEL DIV --- #}
+        </form>
 </section>
 
 <div class="row">
