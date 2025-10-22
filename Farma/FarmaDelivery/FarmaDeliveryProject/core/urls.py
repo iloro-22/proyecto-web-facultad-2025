@@ -8,6 +8,7 @@ urlpatterns = [
     # URLs principales que ya tenías
     path('', views.home_page, name='home'),
     path('buscar/', views.buscar_productos, name='buscar_productos'),
+    path('autocomplete/productos/', views.autocomplete_productos, name='autocomplete_productos'),
     path('producto/<int:producto_id>/', views.detalle_producto, name='detalle_producto'),
     path('comprar/<int:producto_id>/', views.procesar_compra, name='procesar_compra'),
 

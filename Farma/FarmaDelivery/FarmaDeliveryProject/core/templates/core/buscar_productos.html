@@ -1,16 +1,26 @@
 {% extends 'core/base.html' %}
-{% load static %} {% block title %}Buscar Productos - FarmaDelivery{% endblock %}
+{% load static %} 
+
+{% block title %}Buscar Productos - FarmaDelivery{% endblock %}
 
 {% block content %}
 <section class="hero">
     <h1>Buscar Medicamentos</h1>
     <p>Encuentra el medicamento que necesitas en nuestras farmacias asociadas</p>
     
-    <form method="get" class="search-bar">
-        <input type="text" name="busqueda" placeholder="Buscar medicamentos..." value="{{ form.busqueda.value|default:'' }}">
+    <form method="get" action="{% url 'buscar_productos' %}" class="search-bar" style="position: relative;"> 
+        <input type="text"
+               name="busqueda"
+               placeholder="Buscar medicamentos..."
+               value="{{ form.busqueda.value|default:'' }}"
+               id="busqueda-medicamento" 
+               autocomplete="off"> 
         <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+    
+        <div id="sugerencias-busqueda" class="list-group" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background-color: white;">
+            {# Las sugerencias se cargarán aquí con JavaScript #}
+        </div>
     </form>
-
 </section>
 
 <div class="row">
