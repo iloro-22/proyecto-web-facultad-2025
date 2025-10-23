@@ -1,0 +1,497 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Farmacéutico - FarmaDelivery</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="{% static 'css/farmacia.css' %}">
+</head>
+<body>
+<div class="farmacia-container">
+    <!-- Header del Panel -->
+    <div class="farmacia-header">
+        <div class="header-content">
+            <div class="farmacia-info">
+                <h1 class="farmacia-title">
+                    <i class="fas fa-pills"></i>
+                    Panel Farmacéutico
+                </h1>
+                <p class="farmacia-subtitle">{{ farmacia.nombre }} - Matrícula: {{ farmacia.matricula }}</p>
+            </div>
+            <div class="header-actions">
+                <div class="notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-count">{{ pedidos_nuevos.count }}</span>
+                </div>
+                <div class="user-menu">
+                    <span class="user-name">{{ farmacia.user.get_full_name }}</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="logout-section">
+                    <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación por Pestañas -->
+    <div class="farmacia-tabs">
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-tab="pedidos">
+                <i class="fas fa-shopping-cart"></i>
+                Pedidos
+            </button>
+            <button class="tab-btn" data-tab="inventario">
+                <i class="fas fa-boxes"></i>
+                Inventario
+            </button>
+            <button class="tab-btn" data-tab="precios">
+                <i class="fas fa-tags"></i>
+                Precios
+            </button>
+            <button class="tab-btn" data-tab="cuenta">
+                <i class="fas fa-user-cog"></i>
+                Mi Cuenta
+            </button>
+        </nav>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="farmacia-content">
+        <!-- Pestaña Pedidos -->
+        <div class="tab-content active" id="pedidos-tab">
+            <div class="pedidos-container">
+                <!-- Sección Pedidos Nuevos -->
+                <div class="pedidos-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-clock"></i>
+                            Pedidos Nuevos
+                            <span class="badge">{{ pedidos_nuevos.count }}</span>
+                        </h2>
+                    </div>
+                    <div class="pedidos-grid" id="pedidos-nuevos">
+                        {% for pedido in pedidos_nuevos %}
+                        <div class="pedido-card" data-pedido-id="{{ pedido.id }}">
+                            <div class="card-header">
+                                <div class="pedido-info">
+                                    <h3 class="pedido-numero">#{{ pedido.numero_pedido }}</h3>
+                                    <p class="cliente-nombre">{{ pedido.cliente.user.get_full_name }}</p>
+                                </div>
+                                <div class="pedido-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ pedido.fecha_creacion|date:"H:i" }}</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pedido-details">
+                                    <div class="detail-item">
+                                        <i class="fas fa-credit-card"></i>
+                                        <span>{{ pedido.get_metodo_pago_display }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>${{ pedido.total }}</span>
+                                    </div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-primary btn-sm ver-detalle" data-pedido-id="{{ pedido.id }}">
+                                        <i class="fas fa-eye"></i>
+                                        Ver Detalle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No hay pedidos nuevos</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Sección Pedidos en Preparación -->
+                <div class="pedidos-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-cog"></i>
+                            Pedidos en Preparación
+                            <span class="badge">{{ pedidos_preparando.count }}</span>
+                        </h2>
+                    </div>
+                    <div class="pedidos-grid" id="pedidos-preparando">
+                        {% for pedido in pedidos_preparando %}
+                        <div class="pedido-card preparando" data-pedido-id="{{ pedido.id }}">
+                            <div class="card-header">
+                                <div class="pedido-info">
+                                    <h3 class="pedido-numero">#{{ pedido.numero_pedido }}</h3>
+                                    <p class="cliente-nombre">{{ pedido.cliente.user.get_full_name }}</p>
+                                </div>
+                                <div class="pedido-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ pedido.fecha_creacion|date:"H:i" }}</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pedido-details">
+                                    <div class="detail-item">
+                                        <i class="fas fa-credit-card"></i>
+                                        <span>{{ pedido.get_metodo_pago_display }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>${{ pedido.total }}</span>
+                                    </div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-primary btn-sm ver-detalle" data-pedido-id="{{ pedido.id }}">
+                                        <i class="fas fa-eye"></i>
+                                        Ver Detalle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-cog"></i>
+                            <p>No hay pedidos en preparación</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña Inventario -->
+        <div class="tab-content" id="inventario-tab">
+            <div class="inventario-container">
+                <div class="inventario-header">
+                    <h2>Gestión de Inventario</h2>
+                    <div class="inventario-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon sin-stock">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number">{{ productos_sin_stock.count }}</span>
+                                <span class="stat-label">Sin Stock</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon poco-stock">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number">{{ productos_poco_stock.count }}</span>
+                                <span class="stat-label">Poco Stock</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon disponible">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-number">{{ productos_disponibles.count }}</span>
+                                <span class="stat-label">Disponible</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productos Sin Stock -->
+                <div class="productos-section">
+                    <h3 class="section-title sin-stock">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Sin Stock
+                    </h3>
+                    <div class="productos-grid">
+                        {% for producto in productos_sin_stock %}
+                        <div class="producto-card sin-stock">
+                            <div class="producto-info">
+                                <h4>{{ producto.nombre }}</h4>
+                                <p class="laboratorio">{{ producto.laboratorio }}</p>
+                                <p class="precio">${{ producto.precio_base }}</p>
+                            </div>
+                            <div class="stock-controls">
+                                <input type="number" class="stock-input" value="0" min="0" data-producto-id="{{ producto.id }}">
+                                <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
+                                    Actualizar
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>¡Excelente! No hay productos sin stock</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Productos con Poco Stock -->
+                <div class="productos-section">
+                    <h3 class="section-title poco-stock">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Poco Stock
+                    </h3>
+                    <div class="productos-grid">
+                        {% for producto in productos_poco_stock %}
+                        <div class="producto-card poco-stock">
+                            <div class="producto-info">
+                                <h4>{{ producto.nombre }}</h4>
+                                <p class="laboratorio">{{ producto.laboratorio }}</p>
+                                <p class="precio">${{ producto.precio_base }}</p>
+                            </div>
+                            <div class="stock-controls">
+                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}">
+                                <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
+                                    Actualizar
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>No hay productos con poco stock</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Productos Disponibles -->
+                <div class="productos-section">
+                    <h3 class="section-title disponible">
+                        <i class="fas fa-check-circle"></i>
+                        Disponible
+                    </h3>
+                    <div class="productos-grid">
+                        {% for producto in productos_disponibles %}
+                        <div class="producto-card disponible">
+                            <div class="producto-info">
+                                <h4>{{ producto.nombre }}</h4>
+                                <p class="laboratorio">{{ producto.laboratorio }}</p>
+                                <p class="precio">${{ producto.precio_base }}</p>
+                            </div>
+                            <div class="stock-controls">
+                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}">
+                                <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
+                                    Actualizar
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-boxes"></i>
+                            <p>No hay productos disponibles</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña Precios -->
+        <div class="tab-content" id="precios-tab">
+            <div class="precios-container">
+                <div class="precios-header">
+                    <h2>Configuración de Precios y Descuentos</h2>
+                    <p>Gestiona los descuentos por obra social para tus productos</p>
+                </div>
+                
+                <div class="precios-content">
+                    <div class="precios-sidebar">
+                        <h3>Productos</h3>
+                        <div class="productos-list">
+                            {% for producto in productos %}
+                            <div class="producto-item" data-producto-id="{{ producto.id }}">
+                                <h4>{{ producto.nombre }}</h4>
+                                <p class="precio-base">Precio base: ${{ producto.precio_base }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="precios-main">
+                        <h3>Descuentos por Obra Social</h3>
+                        <div class="descuentos-table">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Obra Social</th>
+                                        <th>Descuento %</th>
+                                        <th>Descuento Fijo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for descuento in descuentos %}
+                                    <tr>
+                                        <td>{{ descuento.producto.nombre }}</td>
+                                        <td>{{ descuento.obra_social.nombre }}</td>
+                                        <td>{{ descuento.descuento_porcentaje }}%</td>
+                                        <td>${{ descuento.descuento_fijo }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary editar-descuento" data-descuento-id="{{ descuento.id }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">No hay descuentos configurados</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña Mi Cuenta -->
+        <div class="tab-content" id="cuenta-tab">
+            <div class="cuenta-container">
+                <div class="cuenta-header">
+                    <h2>Configuración de Cuenta</h2>
+                    <p>Gestiona los datos de tu farmacia</p>
+                </div>
+                
+                <div class="cuenta-content">
+                    <form class="cuenta-form" method="post" action="{% url 'configuracion_cuenta_farmacia' %}">
+                        {% csrf_token %}
+                        <div class="form-section">
+                            <h3>Información de la Farmacia</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="nombre">Nombre de la Farmacia</label>
+                                    <input type="text" id="nombre" name="nombre" value="{{ farmacia.nombre }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="matricula">Matrícula</label>
+                                    <input type="text" id="matricula" name="matricula" value="{{ farmacia.matricula }}" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="cuit">CUIT</label>
+                                    <input type="text" id="cuit" name="cuit" value="{{ farmacia.cuit }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="telefono">Teléfono</label>
+                                    <input type="text" id="telefono" name="telefono" value="{{ farmacia.telefono }}" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="email_contacto">Email de Contacto</label>
+                                <input type="email" id="email_contacto" name="email_contacto" value="{{ farmacia.email_contacto }}" required>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Dirección</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="calle">Calle</label>
+                                    <input type="text" id="calle" name="calle" value="{{ farmacia.direccion.calle }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="numero">Número</label>
+                                    <input type="text" id="numero" name="numero" value="{{ farmacia.direccion.numero }}" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ciudad">Ciudad</label>
+                                    <input type="text" id="ciudad" name="ciudad" value="{{ farmacia.direccion.ciudad }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="provincia">Provincia</label>
+                                    <input type="text" id="provincia" name="provincia" value="{{ farmacia.direccion.provincia }}" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="codigo_postal">Código Postal</label>
+                                <input type="text" id="codigo_postal" name="codigo_postal" value="{{ farmacia.direccion.codigo_postal }}" required>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3>Horarios</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="horario_apertura">Horario de Apertura</label>
+                                    <input type="time" id="horario_apertura" name="horario_apertura" value="{{ farmacia.horario_apertura|date:'H:i' }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="horario_cierre">Horario de Cierre</label>
+                                    <input type="time" id="horario_cierre" name="horario_cierre" value="{{ farmacia.horario_cierre|date:'H:i' }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Detalle de Pedido -->
+<div class="modal" id="pedido-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Detalle del Pedido</h3>
+            <button class="modal-close" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="modal-body">
+            <!-- Contenido cargado dinámicamente -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Visualizar Receta -->
+<div class="modal-receta" id="receta-modal">
+    <div class="modal-receta-content">
+        <div class="modal-receta-header">
+            <h3 class="modal-receta-title">Receta Médica</h3>
+            <button class="modal-receta-close" type="button">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-receta-body" id="receta-body">
+            <!-- Contenido de la receta cargado dinámicamente -->
+        </div>
+    </div>
+</div>
+
+<!-- Toast para Notificaciones -->
+<div class="toast-container" id="toast-container">
+    <!-- Toasts aparecerán aquí dinámicamente -->
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/farmacia.js' %}"></script>
+</body>
+</html>

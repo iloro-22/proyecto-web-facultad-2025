@@ -1,5 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from django.contrib.auth import login as auth_login
+from django.contrib.auth.views import LoginView
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.core.mail import send_mail
@@ -14,7 +18,7 @@ from datetime import datetime, timedelta
 from .models import (
     Cliente, Farmacia, Repartidor, Producto, Pedido, 
     DetallePedido, Direccion, ObraSocial, MetodoPago,
-    EstadoPedido, DescuentoObraSocial
+    EstadoPedido, DescuentoObraSocial, RecetaMedica
 )
 from .forms import (
     BusquedaProductoForm, RecetaForm, ConfirmacionPedidoForm,
@@ -207,7 +211,7 @@ def detalle_producto(request, producto_id):
             pass
     
     # Formularios
-    receta_form = RecetaForm()
+    receta_form = RecetaForm(requiere_receta=producto.requiere_receta)
     direccion_form = DireccionForm()
     confirmacion_form = ConfirmacionPedidoForm()
     
@@ -246,7 +250,7 @@ def procesar_compra(request, producto_id):
         return redirect('detalle_producto', producto_id=producto_id)
     
     # Procesar formularios
-    receta_form = RecetaForm(request.POST, request.FILES)
+    receta_form = RecetaForm(request.POST, request.FILES, requiere_receta=producto.requiere_receta)
     direccion_form = DireccionForm(request.POST)
     confirmacion_form = ConfirmacionPedidoForm(request.POST)
     
@@ -254,9 +258,9 @@ def procesar_compra(request, producto_id):
         messages.error(request, 'Por favor corrige los errores en el formulario.')
         return redirect('detalle_producto', producto_id=producto_id)
     
-    # Validar receta si es requerida
+    # Validar que si el producto requiere receta, se haya subido un archivo
     if producto.requiere_receta and not receta_form.cleaned_data.get('archivo_receta'):
-        messages.error(request, 'Este producto requiere una receta médica.')
+        messages.error(request, 'Este producto requiere receta médica. Por favor sube una foto o PDF de tu receta.')
         return redirect('detalle_producto', producto_id=producto_id)
     
     # Crear o obtener dirección
@@ -337,9 +341,14 @@ def procesar_compra(request, producto_id):
     # Guardar receta si se subió
     if receta_form.cleaned_data.get('archivo_receta'):
         archivo_receta = receta_form.cleaned_data['archivo_receta']
-        # Aquí podrías guardar el archivo en el sistema de archivos
-        # y asociarlo al pedido
-        pass
+        observaciones_receta = receta_form.cleaned_data.get('observaciones_receta', '')
+        
+        # Crear registro de receta médica
+        RecetaMedica.objects.create(
+            pedido=pedido,
+            archivo_receta=archivo_receta,
+            observaciones_receta=observaciones_receta
+        )
     
     # Enviar email de confirmación
     enviar_email_confirmacion_pedido(pedido)
@@ -571,6 +580,309 @@ def geocodificar_direccion(request):
             return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+# VISTAS PARA FARMACÉUTICOS
+
+# Vista principal del panel farmacéutico
+@login_required
+def panel_farmacia(request):
+    """Panel principal para farmacéuticos con gestión de pedidos"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        messages.error(request, 'No tienes permisos de farmacia.')
+        return redirect('home')
+    
+    # Obtener pedidos de la farmacia
+    pedidos_nuevos = Pedido.objects.filter(
+        farmacia=farmacia,
+        estado=EstadoPedido.PENDIENTE
+    ).order_by('fecha_creacion')
+    
+    pedidos_preparando = Pedido.objects.filter(
+        farmacia=farmacia,
+        estado=EstadoPedido.PREPARANDO
+    ).order_by('fecha_creacion')
+    
+    context = {
+        'farmacia': farmacia,
+        'pedidos_nuevos': pedidos_nuevos,
+        'pedidos_preparando': pedidos_preparando,
+    }
+    return render(request, 'core/panel_farmacia.html', context)
+
+# Vista para ver detalles de un pedido específico
+@login_required
+def detalle_pedido_farmacia(request, pedido_id):
+    """Vista para ver detalles de un pedido específico en modal"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de farmacia'}, status=403)
+    
+    pedido = get_object_or_404(Pedido, id=pedido_id, farmacia=farmacia)
+    
+    # Obtener detalles del pedido
+    detalles = DetallePedido.objects.filter(pedido=pedido)
+    
+    # Obtener receta médica si existe
+    receta = RecetaMedica.objects.filter(pedido=pedido).first()
+    
+    context = {
+        'pedido': pedido,
+        'detalles': detalles,
+        'receta': receta,
+    }
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Si es una petición AJAX, devolver solo el contenido del modal
+        return render(request, 'core/modal_detalle_pedido.html', context)
+    
+    return render(request, 'core/detalle_pedido_farmacia.html', context)
+
+# Vista para confirmar receta y preparar pedido
+@login_required
+def confirmar_receta_preparar(request, pedido_id):
+    """Vista para confirmar receta y cambiar estado a preparando"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de farmacia'}, status=403)
+    
+    pedido = get_object_or_404(Pedido, id=pedido_id, farmacia=farmacia)
+    
+    if pedido.estado != EstadoPedido.PENDIENTE:
+        return JsonResponse({'error': 'El pedido no está en estado pendiente'}, status=400)
+    
+    # Cambiar estado a preparando
+    pedido.estado = EstadoPedido.PREPARANDO
+    pedido.save()
+    
+    # Marcar receta como validada si existe
+    receta = RecetaMedica.objects.filter(pedido=pedido).first()
+    if receta:
+        from django.utils import timezone
+        receta.validada_por_farmacia = True
+        receta.fecha_validacion = timezone.now()
+        receta.save()
+    
+    # Enviar email de notificación
+    enviar_email_cambio_estado(pedido, EstadoPedido.PENDIENTE)
+    
+    return JsonResponse({
+        'success': True,
+        'mensaje': 'Receta confirmada y pedido en preparación',
+        'nuevo_estado': pedido.get_estado_display()
+    })
+
+# Vista para cancelar pedido por receta inválida
+@login_required
+def cancelar_pedido_receta(request, pedido_id):
+    """Vista para cancelar pedido por receta inválida"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de farmacia'}, status=403)
+    
+    pedido = get_object_or_404(Pedido, id=pedido_id, farmacia=farmacia)
+    
+    if pedido.estado not in [EstadoPedido.PENDIENTE, EstadoPedido.PREPARANDO]:
+        return JsonResponse({'error': 'No se puede cancelar este pedido'}, status=400)
+    
+    # Cambiar estado a cancelado
+    pedido.estado = EstadoPedido.CANCELADO
+    pedido.save()
+    
+    # Restaurar stock
+    for detalle in pedido.detalles.all():
+        producto = detalle.producto
+        producto.stock_disponible += detalle.cantidad
+        producto.save()
+    
+    # Enviar email de notificación
+    enviar_email_cambio_estado(pedido, pedido.estado)
+    
+    return JsonResponse({
+        'success': True,
+        'mensaje': 'Pedido cancelado por receta inválida',
+        'nuevo_estado': pedido.get_estado_display()
+    })
+
+# Vista para entregar pedido al repartidor
+@login_required
+def entregar_al_repartidor(request, pedido_id):
+    """Vista para marcar pedido como entregado al repartidor"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de farmacia'}, status=403)
+    
+    pedido = get_object_or_404(Pedido, id=pedido_id, farmacia=farmacia)
+    
+    if pedido.estado != EstadoPedido.PREPARANDO:
+        return JsonResponse({'error': 'El pedido no está en preparación'}, status=400)
+    
+    # Cambiar estado a listo para entrega
+    pedido.estado = EstadoPedido.LISTO
+    pedido.save()
+    
+    # Enviar email de notificación
+    enviar_email_cambio_estado(pedido, EstadoPedido.PREPARANDO)
+    
+    return JsonResponse({
+        'success': True,
+        'mensaje': 'Pedido entregado al repartidor',
+        'nuevo_estado': pedido.get_estado_display()
+    })
+
+# Vista para marcar pedido como listo para retiro
+@login_required
+def listo_para_retiro(request, pedido_id):
+    """Vista para marcar pedido como listo para retiro en farmacia"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de farmacia'}, status=403)
+    
+    pedido = get_object_or_404(Pedido, id=pedido_id, farmacia=farmacia)
+    
+    if pedido.estado != EstadoPedido.PREPARANDO:
+        return JsonResponse({'error': 'El pedido no está en preparación'}, status=400)
+    
+    # Cambiar estado a listo para retiro
+    pedido.estado = EstadoPedido.LISTO
+    pedido.save()
+    
+    # Enviar email de notificación
+    enviar_email_cambio_estado(pedido, EstadoPedido.PREPARANDO)
+    
+    return JsonResponse({
+        'success': True,
+        'mensaje': 'Pedido listo para retiro',
+        'nuevo_estado': pedido.get_estado_display()
+    })
+
+# Vista para gestión de inventario
+@login_required
+def inventario_farmacia(request):
+    """Vista para gestión de inventario de la farmacia"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        messages.error(request, 'No tienes permisos de farmacia.')
+        return redirect('home')
+    
+    productos = Producto.objects.filter(farmacia=farmacia, activo=True).order_by('nombre')
+    
+    # Clasificar productos por estado de stock
+    productos_sin_stock = productos.filter(stock_disponible=0)
+    productos_poco_stock = productos.filter(stock_disponible__gt=0, stock_disponible__lte=5)
+    productos_disponibles = productos.filter(stock_disponible__gt=5)
+    
+    context = {
+        'farmacia': farmacia,
+        'productos_sin_stock': productos_sin_stock,
+        'productos_poco_stock': productos_poco_stock,
+        'productos_disponibles': productos_disponibles,
+        'total_productos': productos.count(),
+    }
+    return render(request, 'core/inventario_farmacia.html', context)
+
+# Vista para actualizar stock de producto
+@login_required
+def actualizar_stock(request, producto_id):
+    """Vista para actualizar stock de un producto"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de farmacia'}, status=403)
+    
+    producto = get_object_or_404(Producto, id=producto_id, farmacia=farmacia)
+    
+    if request.method == 'POST':
+        try:
+            nuevo_stock = int(request.POST.get('stock'))
+            if nuevo_stock < 0:
+                return JsonResponse({'error': 'El stock no puede ser negativo'}, status=400)
+            
+            producto.stock_disponible = nuevo_stock
+            producto.save()
+            
+            return JsonResponse({
+                'success': True,
+                'mensaje': f'Stock actualizado a {nuevo_stock} unidades',
+                'nuevo_stock': nuevo_stock
+            })
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Stock inválido'}, status=400)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+# Vista para configuración de precios y descuentos
+@login_required
+def configuracion_precios(request):
+    """Vista para configurar precios y descuentos por obra social"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        messages.error(request, 'No tienes permisos de farmacia.')
+        return redirect('home')
+    
+    productos = Producto.objects.filter(farmacia=farmacia, activo=True).order_by('nombre')
+    obras_sociales = ObraSocial.objects.all().order_by('nombre')
+    
+    # Obtener descuentos existentes
+    descuentos = DescuentoObraSocial.objects.filter(
+        producto__farmacia=farmacia,
+        activo=True
+    ).select_related('producto', 'obra_social')
+    
+    context = {
+        'farmacia': farmacia,
+        'productos': productos,
+        'obras_sociales': obras_sociales,
+        'descuentos': descuentos,
+    }
+    return render(request, 'core/configuracion_precios.html', context)
+
+# Vista para configuración de cuenta farmacia
+@login_required
+def configuracion_cuenta_farmacia(request):
+    """Vista para configurar datos de la cuenta de farmacia"""
+    try:
+        farmacia = Farmacia.objects.get(user=request.user)
+    except Farmacia.DoesNotExist:
+        messages.error(request, 'No tienes permisos de farmacia.')
+        return redirect('home')
+    
+    if request.method == 'POST':
+        # Actualizar datos de la farmacia
+        farmacia.nombre = request.POST.get('nombre', farmacia.nombre)
+        farmacia.matricula = request.POST.get('matricula', farmacia.matricula)
+        farmacia.cuit = request.POST.get('cuit', farmacia.cuit)
+        farmacia.telefono = request.POST.get('telefono', farmacia.telefono)
+        farmacia.email_contacto = request.POST.get('email_contacto', farmacia.email_contacto)
+        farmacia.horario_apertura = request.POST.get('horario_apertura', farmacia.horario_apertura)
+        farmacia.horario_cierre = request.POST.get('horario_cierre', farmacia.horario_cierre)
+        
+        # Actualizar dirección
+        direccion = farmacia.direccion
+        direccion.calle = request.POST.get('calle', direccion.calle)
+        direccion.numero = request.POST.get('numero', direccion.numero)
+        direccion.ciudad = request.POST.get('ciudad', direccion.ciudad)
+        direccion.provincia = request.POST.get('provincia', direccion.provincia)
+        direccion.codigo_postal = request.POST.get('codigo_postal', direccion.codigo_postal)
+        direccion.save()
+        
+        farmacia.save()
+        
+        messages.success(request, 'Configuración actualizada correctamente.')
+        return redirect('configuracion_cuenta_farmacia')
+    
+    context = {
+        'farmacia': farmacia,
+    }
+    return render(request, 'core/configuracion_cuenta_farmacia.html', context)
 
 # Funciones auxiliares
 def enviar_email_confirmacion_pedido(pedido):

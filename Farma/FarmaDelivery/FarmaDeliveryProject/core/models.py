@@ -253,6 +253,7 @@ class Producto(models.Model):
     def __str__(self):
         return f"{self.nombre} - {self.farmacia.nombre}"
 
+
 # Modelo DescuentoObraSocial
 class DescuentoObraSocial(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='descuentos_obra_social')
@@ -343,4 +344,38 @@ class DetallePedido(models.Model):
         unique_together = ['pedido', 'producto']
     
     def __str__(self):
+<<<<<<< HEAD
         return f"{self.producto.nombre} x{self.cantidad} - Pedido #{self.pedido.numero_pedido}"
+=======
+        return f"{self.producto.nombre} x{self.cantidad} - Pedido #{self.pedido.numero_pedido}"
+
+# Modelo RecetaMedica
+class RecetaMedica(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='recetas')
+    archivo_receta = models.FileField(upload_to='recetas/', blank=True, null=True)
+    observaciones_receta = models.TextField(blank=True)
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    validada_por_farmacia = models.BooleanField(default=False)
+    fecha_validacion = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Receta Médica'
+        verbose_name_plural = 'Recetas Médicas'
+    
+    def __str__(self):
+        return f"Receta para Pedido #{self.pedido.numero_pedido}"
+    
+    @property
+    def archivo_url(self):
+        """Retorna la URL del archivo de receta"""
+        if self.archivo_receta:
+            return self.archivo_receta.url
+        return None
+    
+    @property
+    def extension_archivo(self):
+        """Retorna la extensión del archivo"""
+        if self.archivo_receta:
+            return self.archivo_receta.name.split('.')[-1].lower()
+        return None
+>>>>>>> grupo_naranja
