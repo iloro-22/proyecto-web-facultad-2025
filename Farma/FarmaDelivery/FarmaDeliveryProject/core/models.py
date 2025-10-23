@@ -344,10 +344,8 @@ class DetallePedido(models.Model):
         unique_together = ['pedido', 'producto']
     
     def __str__(self):
-<<<<<<< HEAD
         return f"{self.producto.nombre} x{self.cantidad} - Pedido #{self.pedido.numero_pedido}"
-=======
-        return f"{self.producto.nombre} x{self.cantidad} - Pedido #{self.pedido.numero_pedido}"
+
 
 # Modelo RecetaMedica
 class RecetaMedica(models.Model):
@@ -378,4 +376,3 @@ class RecetaMedica(models.Model):
         if self.archivo_receta:
             return self.archivo_receta.name.split('.')[-1].lower()
         return None
->>>>>>> grupo_naranja

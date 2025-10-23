@@ -134,7 +134,7 @@ LOGIN_REDIRECT_URL = '/'
 
 # 2. URL a donde enviar al usuario DESPUÉS de un Logout.
 # Aquí lo redirigimos de vuelta a la página de login para que pueda iniciar sesión de nuevo.
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Configuración de Email
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Para desarrollo
