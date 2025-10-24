@@ -106,6 +106,19 @@ class ConfirmacionPedidoForm(forms.Form):
 
 class DireccionForm(forms.ModelForm):
     """Formulario para crear/editar direcciones"""
+    def __init__(self, *args, **kwargs):
+        # Extraer la dirección del cliente si se proporciona
+        direccion_cliente = kwargs.pop('direccion_cliente', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si hay una dirección del cliente, usarla como valores iniciales
+        if direccion_cliente:
+            self.fields['calle'].initial = direccion_cliente.calle
+            self.fields['numero'].initial = direccion_cliente.numero
+            self.fields['ciudad'].initial = direccion_cliente.ciudad
+            self.fields['provincia'].initial = direccion_cliente.provincia
+            self.fields['codigo_postal'].initial = direccion_cliente.codigo_postal
+    
     class Meta:
         model = Direccion
         fields = ['calle', 'numero', 'ciudad', 'provincia', 'codigo_postal']
@@ -123,14 +136,12 @@ class DireccionForm(forms.ModelForm):
             'ciudad': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ciudad',
-                'id': 'direccion-ciudad',
-                'value': 'Buenos Aires'
+                'id': 'direccion-ciudad'
             }),
             'provincia': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Provincia',
-                'id': 'direccion-provincia',
-                'value': 'Buenos Aires'
+                'id': 'direccion-provincia'
             }),
             'codigo_postal': forms.TextInput(attrs={
                 'class': 'form-control',

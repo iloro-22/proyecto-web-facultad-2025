@@ -55,50 +55,34 @@ function initTabs() {
 function cargarPedidosDisponibles() {
     console.log('Cargando pedidos disponibles...');
     
-    // Simular datos de pedidos disponibles
-    pedidosDisponibles = [
-        {
-            id: 1,
-            numero: 'FD20250121001',
-            farmacia: 'Farmacia del Centro',
-            direccion_farmacia: 'Av. Corrientes 1234, CABA',
-            ganancia: 450,
-            distancia: '2.3 km',
-            cliente: 'María González',
-            direccion_cliente: 'Av. Santa Fe 5678, CABA',
-            productos: ['Aspirina 500mg', 'Paracetamol 500mg'],
-            total: 270
-        },
-        {
-            id: 2,
-            numero: 'FD20250121002',
-            farmacia: 'Farmacia del Centro',
-            direccion_farmacia: 'Av. Corrientes 1234, CABA',
-            ganancia: 380,
-            distancia: '1.8 km',
-            cliente: 'Juan Pérez',
-            direccion_cliente: 'Av. Córdoba 2345, CABA',
-            productos: ['Ibuprofeno 400mg'],
-            total: 200
-        },
-        {
-            id: 3,
-            numero: 'FD20250121003',
-            farmacia: 'Farmacia del Centro',
-            direccion_farmacia: 'Av. Corrientes 1234, CABA',
-            ganancia: 520,
-            distancia: '3.1 km',
-            cliente: 'Ana López',
-            direccion_cliente: 'Av. Rivadavia 3456, CABA',
-            productos: ['Omeprazol 20mg'],
-            total: 300
+    // Cargar datos reales desde la API
+    fetch('/api/pedidos-disponibles/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
-    ];
-    
-    // Ordenar por ganancia (mayor a menor)
-    pedidosDisponibles.sort((a, b) => b.ganancia - a.ganancia);
-    
-    renderPedidosDisponibles();
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            pedidosDisponibles = data.pedidos;
+            console.log('Pedidos cargados:', pedidosDisponibles);
+            
+            // Ordenar por ganancia (mayor a menor)
+            pedidosDisponibles.sort((a, b) => b.ganancia - a.ganancia);
+            
+            renderPedidosDisponibles();
+        } else {
+            console.error('Error al cargar pedidos:', data.error);
+            pedidosDisponibles = [];
+            renderPedidosDisponibles();
+        }
+    })
+    .catch(error => {
+        console.error('Error en la petición:', error);
+        pedidosDisponibles = [];
+        renderPedidosDisponibles();
+    });
 }
 
 function renderPedidosDisponibles() {
@@ -322,25 +306,44 @@ function aceptarPedido(pedidoId) {
         return;
     }
     
-    // Mover pedido de disponibles a activos
-    pedidosActivos.push({
-        ...pedido,
-        estado: 'EN_CAMINO',
-        metodo_pago: 'EFECTIVO',
-        monto_cobrar: pedido.total
+    // Hacer petición al servidor para aceptar el pedido
+    fetch(`/repartidor/aceptar/${pedidoId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mover pedido de disponibles a activos
+            pedidosActivos.push({
+                ...pedido,
+                estado: 'EN_CAMINO',
+                metodo_pago: 'EFECTIVO',
+                monto_cobrar: pedido.total
+            });
+            
+            // Remover de disponibles
+            pedidosDisponibles = pedidosDisponibles.filter(p => p.id !== pedidoId);
+            
+            // Actualizar vistas
+            renderPedidosDisponibles();
+            renderPedidosActivos();
+            
+            // Cerrar modal
+            document.getElementById('pedido-modal').classList.remove('show');
+            
+            showToast('success', 'Pedido Aceptado', `Pedido #${pedido.numero} aceptado exitosamente`);
+        } else {
+            showToast('error', 'Error', data.message || 'No se pudo aceptar el pedido');
+        }
+    })
+    .catch(error => {
+        console.error('Error al aceptar pedido:', error);
+        showToast('error', 'Error', 'No se pudo aceptar el pedido');
     });
-    
-    // Remover de disponibles
-    pedidosDisponibles = pedidosDisponibles.filter(p => p.id !== pedidoId);
-    
-    // Actualizar vistas
-    renderPedidosDisponibles();
-    renderPedidosActivos();
-    
-    // Cerrar modal
-    document.getElementById('pedido-modal').classList.remove('show');
-    
-    showToast('success', 'Pedido Aceptado', `Pedido #${pedido.numero} aceptado exitosamente`);
 }
 
 function rechazarPedido(pedidoId) {

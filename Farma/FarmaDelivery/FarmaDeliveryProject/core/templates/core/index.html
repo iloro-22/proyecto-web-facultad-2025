@@ -1,3 +1,143 @@
+<<<<<<< HEAD
+{% extends 'core/base.html' %}
+
+{% block title %}FarmaDelivery - Inicio{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Encuentra tus medicamentos con facilidad</h1>
+    <p>Busca medicamentos de venta libre o sube tu receta para encontrar las farmacias que tienen lo que necesitas.</p>
+    
+    <form method="get" action="{% url 'buscar_productos' %}" class="search-bar">
+        <input type="text" name="busqueda" placeholder="Buscar medicamentos..." value="{{ form.busqueda.value|default:'' }}">
+        <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+    </form>
+    
+    <div class="categories">
+        <a href="{% url 'buscar_productos' %}" class="category-btn active">
+            <i class="fas fa-tablets"></i> Todos
+        </a>
+        <a href="{% url 'buscar_productos' %}?categoria=Venta Libre" class="category-btn">
+            <i class="fas fa-first-aid"></i> Venta Libre
+        </a>
+        <a href="{% url 'buscar_productos' %}?categoria=Con Receta" class="category-btn">
+            <i class="fas fa-file-prescription"></i> Con Receta
+        </a>
+        <a href="{% url 'buscar_productos' %}?categoria=Wellness" class="category-btn">
+            <i class="fas fa-heart"></i> Wellness
+        </a>
+    </div>
+</section>
+
+
+{% if productos_destacados %}
+<section>
+    <h2 class="section-title">
+        <i class="fas fa-tablets"></i> Medicamentos Disponibles
+        {% if filtro_distancia %}
+        <span class="badge bg-success">Cercanos (hasta 2km)</span>
+        {% endif %}
+    </h2>
+    <div class="products-grid">
+        {% for item in productos_destacados %}
+        <div class="product-card">
+            <div class="product-image">
+                <i class="fas fa-pills"></i>
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">{{ item.producto.nombre }}</h3>
+                <p class="product-description">{{ item.producto.descripcion|truncatewords:10 }}</p>
+                <div class="product-meta">
+                    <div>
+                        <span class="product-price">${{ item.producto.precio_base }}</span>
+                        {% if item.producto.categoria %}
+                        <br><small class="text-muted">{{ item.producto.categoria }}</small>
+                        {% endif %}
+                    </div>
+                    <span class="stock-status {% if item.producto.stock_disponible > 10 %}in-stock{% elif item.producto.stock_disponible > 0 %}low-stock{% else %}no-stock{% endif %}">
+                        {% if item.producto.stock_disponible > 10 %}Disponible{% elif item.producto.stock_disponible > 0 %}Poco Stock{% else %}Sin Stock{% endif %}
+                    </span>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">{{ item.producto.farmacia.nombre }}</small>
+                    {% if item.distancia %}
+                    <br><small class="text-success">
+                        <i class="fas fa-map-marker-alt"></i> {{ item.distancia }} km
+                    </small>
+                    {% endif %}
+                </div>
+                {% if item.producto.stock_disponible > 0 %}
+                <a href="{% url 'detalle_producto' item.producto.id %}" class="btn btn-success w-100 mt-2">
+                    <i class="fas fa-shopping-cart"></i> Ver Detalles
+                </a>
+                {% else %}
+                <button class="btn btn-secondary w-100 mt-2" disabled>
+                    <i class="fas fa-times"></i> Sin Stock
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="text-center">
+        <a href="{% url 'buscar_productos' %}" class="btn btn-primary">
+            <i class="fas fa-search"></i> Ver Todos los Productos
+        </a>
+    </div>
+</section>
+{% else %}
+<section>
+    <div class="text-center py-5">
+        <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+        <h3>No hay farmacias cercanas</h3>
+        <p class="text-muted">
+            {% if filtro_distancia %}
+            No encontramos farmacias dentro de 2km de tu ubicación. 
+            {% else %}
+            Completa tu dirección en tu perfil para ver farmacias cercanas.
+            {% endif %}
+        </p>
+        <a href="{% url 'perfil_cliente' %}" class="btn btn-primary">
+            <i class="fas fa-user"></i> Completar Perfil
+        </a>
+    </div>
+</section>
+{% endif %}
+
+<section>
+    <h2 class="section-title"><i class="fas fa-info-circle"></i> ¿Cómo funciona?</h2>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                    <h5 class="card-title">1. Busca tu medicamento</h5>
+                    <p class="card-text">Encuentra el medicamento que necesitas usando nuestro buscador inteligente.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-file-upload fa-3x text-secondary mb-3"></i>
+                    <h5 class="card-title">2. Sube tu receta</h5>
+                    <p class="card-text">Si es necesario, sube una foto de tu receta médica para productos controlados.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-truck fa-3x text-success mb-3"></i>
+                    <h5 class="card-title">3. Recibe en casa</h5>
+                    <p class="card-text">Tu pedido será entregado directamente en tu domicilio de forma rápida y segura.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+=======
 {% extends 'core/base.html' %}
 {% load static %} {% block title %}FarmaDelivery - Inicio{% endblock %}
 
@@ -153,4 +293,5 @@
         </div>
     </div>
 </section>
+>>>>>>> bf57f724a994412598a97a7cc751b19541788fa9
 {% endblock %}

@@ -293,7 +293,7 @@ function actualizarStock(productoId, nuevoStock) {
     fetch(`/farmacia/inventario/producto/${productoId}/actualizar-stock/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: `stock=${nuevoStock}`
