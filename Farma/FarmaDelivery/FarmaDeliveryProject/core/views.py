@@ -157,9 +157,9 @@ def detalle_producto(request, producto_id):
         except DescuentoObraSocial.DoesNotExist:
             pass
     
-    # Formularios
+    # Formularios - pasar la dirección del cliente para autocompletado
     receta_form = RecetaForm(requiere_receta=producto.requiere_receta)
-    direccion_form = DireccionForm()
+    direccion_form = DireccionForm(direccion_cliente=cliente.direccion)
     confirmacion_form = ConfirmacionPedidoForm()
     
     context = {
@@ -437,6 +437,46 @@ def actualizar_ubicacion_repartidor(request):
     except Exception as e:
         return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
 
+# API endpoint para obtener pedidos disponibles para repartidores
+@login_required
+def api_pedidos_disponibles(request):
+    """API endpoint para obtener pedidos disponibles para repartidores"""
+    try:
+        repartidor = Repartidor.objects.get(user=request.user)
+    except Repartidor.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de repartidor'}, status=403)
+    
+    # Obtener pedidos cercanos
+    pedidos_cercanos = repartidor.pedidos_cercanos(radio_km=2)
+    
+    # Formatear datos para el frontend
+    pedidos_data = []
+    for pedido_info in pedidos_cercanos:
+        pedido = pedido_info['pedido']
+        distancia = pedido_info['distancia']
+        
+        # Calcular ganancia estimada (ejemplo: 15% del total)
+        ganancia_estimada = float(pedido.total) * 0.15
+        
+        pedidos_data.append({
+            'id': pedido.id,
+            'numero': pedido.numero_pedido,
+            'farmacia': pedido.farmacia.nombre,
+            'direccion_farmacia': str(pedido.farmacia.direccion),
+            'ganancia': round(ganancia_estimada, 2),
+            'distancia': f"{distancia} km",
+            'cliente': pedido.cliente.user.get_full_name(),
+            'direccion_cliente': str(pedido.direccion_entrega),
+            'productos': [detalle.producto.nombre for detalle in pedido.detalles.all()],
+            'total': float(pedido.total),
+            'fecha_creacion': pedido.fecha_creacion.strftime('%d/%m/%Y %H:%M')
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'pedidos': pedidos_data
+    })
+
 # Vista para aceptar un pedido
 @login_required
 def aceptar_pedido(request, pedido_id):
@@ -468,10 +508,13 @@ def aceptar_pedido(request, pedido_id):
     pedido.save()
     
     # Enviar email de notificación
-    enviar_email_cambio_estado(pedido, EstadoPedido.LISTO)
+    enviar_email_cambio_estado(pedido, EstadoPedido.EN_CAMINO)
     
-    messages.success(request, f'Pedido #{pedido.numero_pedido} aceptado correctamente.')
-    return redirect('panel_repartidor')
+    return JsonResponse({
+        'success': True,
+        'message': f'Pedido #{pedido.numero_pedido} aceptado correctamente.',
+        'pedido_id': pedido.id
+    })
 
 # Vista para geocodificar direcciones
 def geocodificar_direccion(request):
@@ -546,10 +589,22 @@ def panel_farmacia(request):
         estado=EstadoPedido.PREPARANDO
     ).order_by('fecha_creacion')
     
+    # Obtener productos del inventario
+    productos = Producto.objects.filter(farmacia=farmacia, activo=True).order_by('nombre')
+    
+    # Clasificar productos por estado de stock
+    productos_sin_stock = productos.filter(stock_disponible=0)
+    productos_poco_stock = productos.filter(stock_disponible__gt=0, stock_disponible__lte=5)
+    productos_disponibles = productos.filter(stock_disponible__gt=5)
+    
     context = {
         'farmacia': farmacia,
         'pedidos_nuevos': pedidos_nuevos,
         'pedidos_preparando': pedidos_preparando,
+        'productos_sin_stock': productos_sin_stock,
+        'productos_poco_stock': productos_poco_stock,
+        'productos_disponibles': productos_disponibles,
+        'total_productos': productos.count(),
     }
     return render(request, 'core/panel_farmacia.html', context)
 
@@ -728,7 +783,7 @@ def inventario_farmacia(request):
         'productos_disponibles': productos_disponibles,
         'total_productos': productos.count(),
     }
-    return render(request, 'core/inventario_farmacia.html', context)
+    return render(request, 'core/panel_farmacia.html', context)
 
 # Vista para actualizar stock de producto
 @login_required

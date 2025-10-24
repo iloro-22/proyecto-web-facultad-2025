@@ -46,4 +46,5 @@ urlpatterns = [
     # API endpoints
     path('api/geocodificar/', core_views.geocodificar_direccion, name='geocodificar_direccion'),
     path('api/ubicacion/', core_views.actualizar_ubicacion_repartidor, name='actualizar_ubicacion_repartidor'),
+    path('api/pedidos-disponibles/', core_views.api_pedidos_disponibles, name='api_pedidos_disponibles'),
 ]

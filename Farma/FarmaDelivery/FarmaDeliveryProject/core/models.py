@@ -157,6 +157,10 @@ class Repartidor(models.Model):
     latitud_actual = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitud_actual = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     ultima_actualizacion_ubicacion = models.DateTimeField(null=True, blank=True)
+    # Ubicación fija para pruebas
+    ubicacion_fija = models.BooleanField(default=False, help_text="Si está marcado, usa ubicación fija en lugar de GPS")
+    latitud_fija = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, help_text="Latitud fija para pruebas")
+    longitud_fija = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True, help_text="Longitud fija para pruebas")
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.REPARTIDOR)
     
     class Meta:
@@ -177,13 +181,20 @@ class Repartidor(models.Model):
     
     def pedidos_cercanos(self, radio_km=2):
         """Retorna pedidos cercanos al repartidor"""
-        if not (self.latitud_actual and self.longitud_actual):
+        # Usar ubicación fija si está habilitada, sino usar ubicación actual
+        if self.ubicacion_fija and self.latitud_fija and self.longitud_fija:
+            lat = self.latitud_fija
+            lon = self.longitud_fija
+        elif self.latitud_actual and self.longitud_actual:
+            lat = self.latitud_actual
+            lon = self.longitud_actual
+        else:
             return []
         
-        # Crear una dirección temporal con la ubicación actual del repartidor
+        # Crear una dirección temporal con la ubicación del repartidor
         ubicacion_actual = Direccion(
-            latitud=self.latitud_actual,
-            longitud=self.longitud_actual
+            latitud=lat,
+            longitud=lon
         )
         
         pedidos_cercanos = []
