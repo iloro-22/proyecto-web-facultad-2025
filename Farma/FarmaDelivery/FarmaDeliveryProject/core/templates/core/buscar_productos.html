@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load static %} 
 
 {% block title %}Buscar Productos - FarmaDelivery{% endblock %}
 
@@ -7,9 +8,18 @@
     <h1>Buscar Medicamentos</h1>
     <p>Encuentra el medicamento que necesitas en nuestras farmacias asociadas</p>
     
-    <form method="get" class="search-bar">
-        <input type="text" name="busqueda" placeholder="Buscar medicamentos..." value="{{ form.busqueda.value|default:'' }}">
+    <form method="get" action="{% url 'buscar_productos' %}" class="search-bar" style="position: relative;"> 
+        <input type="text"
+               name="busqueda"
+               placeholder="Buscar medicamentos..."
+               value="{{ form.busqueda.value|default:'' }}"
+               id="busqueda-medicamento" 
+               autocomplete="off"> 
         <button type="submit"><i class="fas fa-search"></i> Buscar</button>
+    
+        <div id="sugerencias-busqueda" class="list-group" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; background-color: white;">
+            {# Las sugerencias se cargarán aquí con JavaScript #}
+        </div>
     </form>
 </section>
 
@@ -21,10 +31,6 @@
             </div>
             <div class="card-body">
                 <form method="get">
-                    <div class="mb-3">
-                        <label for="busqueda" class="form-label">Buscar</label>
-                        <input type="text" class="form-control" name="busqueda" value="{{ form.busqueda.value|default:'' }}">
-                    </div>
                     
                     <div class="mb-3">
                         <label for="categoria" class="form-label">Categoría</label>
@@ -76,9 +82,17 @@
         <div class="products-grid">
             {% for item in productos %}
             <div class="product-card">
+                
                 <div class="product-image">
-                    <i class="fas fa-pills"></i>
+                    {% if item.producto.imagen %}
+                        <img src="{{ item.producto.imagen.url }}" alt="{{ item.producto.nombre }}" style="width: 100%; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <div style="width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa;">
+                            <i class="fas fa-pills fa-5x text-secondary"></i>
+                        </div>
+                    {% endif %}
                 </div>
+
                 <div class="product-info">
                     <h3 class="product-title">{{ item.producto.nombre }}</h3>
                     <p class="product-description">{{ item.producto.descripcion|truncatewords:15 }}</p>
@@ -115,11 +129,11 @@
                     </div>
                     
                     {% if item.producto.stock_disponible > 0 %}
-                    <a href="{% url 'detalle_producto' item.producto.id %}" class="btn btn-success w-100 mt-2">
+                    <a href="{% url 'detalle_producto' item.producto.id %}" class="btn btn-success w-100 mt-2 mt-auto">
                         <i class="fas fa-shopping-cart"></i> Ver Detalles
                     </a>
                     {% else %}
-                    <button class="btn btn-secondary w-100 mt-2" disabled>
+                    <button class="btn btn-secondary w-100 mt-2 mt-auto" disabled>
                         <i class="fas fa-times"></i> Sin Stock
                     </button>
                     {% endif %}
@@ -128,7 +142,6 @@
             {% endfor %}
         </div>
         
-        <!-- Paginación -->
         {% if productos.has_other_pages %}
         <nav aria-label="Paginación de productos">
             <ul class="pagination justify-content-center">

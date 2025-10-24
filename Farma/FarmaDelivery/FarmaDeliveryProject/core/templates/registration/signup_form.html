@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ form_title|default:"Registrarse" }} - FarmaDelivery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2A7DE1;
+            --secondary: #3BB3BD;
+            --light: #F8F9FA;
+            --dark: #343A40;
+            --danger: #DC3545;
+            --success: #28A745;
+            --warning: #FFC107;
+            --error: #DC3545;
+            --input-border: #ced4da;
+            --input-focus-border: #86b7fe;
+            --input-focus-shadow: rgba(42, 125, 225, 0.25);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            min-height: 100vh;
+            padding: 30px 15px; /* Padding para permitir scroll */
+            /* display: flex; align-items: center; justify-content: center; */ /* Quitamos flex para scroll */
+        }
+        .signup-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            padding: 30px 35px;
+            width: 100%;
+            max-width: 750px;
+            margin: 20px auto; /* Centrar horizontalmente, permitir margen vertical */
+            text-align: center;
+        }
+        .logo { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px; }
+        .logo i { font-size: 2.2rem; color: var(--primary); }
+        .logo h1 { font-size: 1.8rem; color: var(--primary); font-weight: bold; }
+        .signup-title { font-size: 1.7rem; color: var(--dark); margin-bottom: 25px; font-weight: 600; text-align: center; }
+    
+        /* Estilos de formulario */
+        .form-group { margin-bottom: 1rem; text-align: left; } /* Margen inferior para separar verticalmente */
+        .form-label { display: block; margin-bottom: .5rem; color: var(--dark); font-weight: 500; font-size: 0.9rem; }
+    
+        /* Inputs, Selects, Textareas - Usar clases de Bootstrap directamente si es posible */
+        /* Aseguramos que ocupen todo el ancho de su columna */
+        .form-control, .form-select, .form-group textarea {
+            display: block;
+            width: 100%;
+            padding: .375rem .75rem;
+            font-size: 1rem; /* Volver a tamaño estándar */
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid var(--input-border);
+            appearance: none;
+            border-radius: .25rem;
+            transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        }
+         .form-control:focus, .form-select:focus, .form-group textarea:focus {
+            color: #212529;
+            background-color: #fff;
+            border-color: var(--input-focus-border);
+            outline: 0;
+            box-shadow: 0 0 0 .25rem var(--input-focus-shadow);
+        }
+        .form-control[type="file"] { padding: .3rem .75rem; }
+        .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right .75rem center; background-size: 16px 12px; }
+    
+        /* Corrección importante: Asegurar que las filas de Bootstrap funcionen */
+        .row {
+            --bs-gutter-x: 1.5rem; /* Espaciado horizontal estándar de Bootstrap */
+            --bs-gutter-y: 0; /* Sin espaciado vertical por defecto en la fila */
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: calc(-1 * var(--bs-gutter-y));
+            margin-right: calc(-.5 * var(--bs-gutter-x));
+            margin-left: calc(-.5 * var(--bs-gutter-x));
+        }
+        .row > * { /* Estilos para las columnas dentro de la fila */
+          flex-shrink: 0;
+          width: 100%;
+          max-width: 100%;
+          padding-right: calc(var(--bs-gutter-x) * .5);
+          padding-left: calc(var(--bs-gutter-x) * .5);
+          margin-top: var(--bs-gutter-y);
+        }
+        /* Clases de columna de Bootstrap (ya deberían estar cargadas por el CSS de Bootstrap, pero por si acaso) */
+        .col-12 { flex: 0 0 auto; width: 100%; }
+        @media (min-width: 768px) { /* md breakpoint */
+          .col-md-4 { flex: 0 0 auto; width: 33.33333333%; }
+          .col-md-6 { flex: 0 0 auto; width: 50%; }
+          .col-md-8 { flex: 0 0 auto; width: 66.66666667%; }
+          .col-md-12 { flex: 0 0 auto; width: 100%; }
+        }
+    
+    
+        .errorlist {
+            list-style: none; color: var(--error); font-size: 0.8rem;
+            margin-top: .25rem; padding-left: 0; text-align: left;
+        }
+        .required { color: var(--error); margin-left: 2px; }
+        #moto-fields { display: none; } /* Ocultar campos de moto */
+    
+        .btn-registro {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; border: none; border-radius: .25rem;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; margin-top: 25px;
+        }
+        .btn-registro:hover { filter: brightness(1.1); box-shadow: 0 4px 10px rgba(42, 125, 225, 0.2); }
+    
+        .back-link { display: inline-block; margin-top: 25px; font-size: 0.9rem; }
+        .back-link a { color: var(--primary); text-decoration: none; font-weight: 500; }
+        .back-link a:hover { text-decoration: underline; color: var(--secondary); }
+    
+        h3 {
+            margin: 1.5rem 0 1rem 0; color: var(--dark); text-align: left;
+            font-size: 1.25rem; font-weight: 600;
+            border-top: 1px solid #eee; padding-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="logo">
+            <i class="fas fa-pills"></i>
+            <h1>FarmaDelivery</h1>
+        </div>
+        <h2 class="signup-title">Registro de Cliente</h2>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p class="mb-0">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+        
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger mb-3">
+                    {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        
+            <div class="row g-3 mb-3">
+                {% if form.dni %}
+                <div class="col-12">
+                    <div class="form-group text-start">
+                        <label for="{{ form.dni.id_for_label }}" class="form-label">{{ form.dni.label }} {% if form.dni.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.dni }}
+                        {% if form.dni.errors %}<div class="errorlist">{{ form.dni.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        
+            <div class="row g-3 mb-3">
+                {% if form.email %}
+                <div class="col-12">
+                     <div class="form-group text-start">
+                        <label for="{{ form.email.id_for_label }}">Email {% if form.email.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div class="errorlist">{{ form.email.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        
+           {% if user_type != 'Farmacia' %}
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="form-group text-start">
+                    <label for="{{ form.first_name.id_for_label }}">Nombre</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %} <div class="errorlist"> {% for error in form.first_name.errors %} {{ error }} {% endfor %} </div> {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group text-start">
+                    <label for="{{ form.last_name.id_for_label }}">Apellido</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %} <div class="errorlist"> {% for error in form.last_name.errors %} {{ error }} {% endfor %} </div> {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+            <div class="row g-3 mb-3">
+                {% if form.password1 %}
+                <div class="col-md-6">
+                    <div class="form-group text-start">
+                        <label for="{{ form.password1.id_for_label }}">Contraseña {% if form.password1.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}<div class="errorlist">{{ form.password1.errors }}</div>{% endif %}
+                        {% if form.password1.help_text %}<div class="form-text">{{ form.password1.help_text }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                 {% if form.password2 %}
+                <div class="col-md-6">
+                    <div class="form-group text-start">
+                        <label for="{{ form.password2.id_for_label }}">Confirmar contraseña {% if form.password2.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}<div class="errorlist">{{ form.password2.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        
+            {% if user_type == 'Cliente' %}
+                <div class="row g-3 mb-3">
+                    {% if form.obra_social %}
+                    <div class="col-md-6">
+                         <div class="form-group text-start">
+                            <label for="{{ form.obra_social.id_for_label }}">{{ form.obra_social.label }}</label>
+                            {{ form.obra_social }}
+                            {% if form.obra_social.errors %}<div class="errorlist">{{ form.obra_social.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if form.numero_afiliado %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.numero_afiliado.id_for_label }}">{{ form.numero_afiliado.label }}</label>
+                            {{ form.numero_afiliado }}
+                            {% if form.numero_afiliado.errors %}<div class="errorlist">{{ form.numero_afiliado.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                 <div class="row g-3 mb-3">
+                     {% if form.telefono %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.telefono.id_for_label }}">Teléfono {% if form.telefono.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}<div class="errorlist">{{ form.telefono.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6"></div>
+                 </div>
+        
+            {% elif user_type == 'Farmacia' %}
+                <div class="row g-3 mb-3">
+                     {% if form.nombre_farmacia %}
+                    <div class="col-12">
+                         <div class="form-group text-start">
+                            <label for="{{ form.nombre_farmacia.id_for_label }}">{{ form.nombre_farmacia.label }} {% if form.nombre_farmacia.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.nombre_farmacia }}
+                            {% if form.nombre_farmacia.errors %}<div class="errorlist">{{ form.nombre_farmacia.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                     {% endif %}
+                </div>
+                <div class="row g-3 mb-3">
+                    {% if form.cuit %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.cuit.id_for_label }}">{{ form.cuit.label }} {% if form.cuit.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.cuit }}
+                            {% if form.cuit.errors %}<div class="errorlist">{{ form.cuit.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if form.matricula %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.matricula.id_for_label }}">{{ form.matricula.label }} {% if form.matricula.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.matricula }}
+                            {% if form.matricula.errors %}<div class="errorlist">{{ form.matricula.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                 <div class="row g-3 mb-3">
+                    {% if form.telefono %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.telefono.id_for_label }}">Teléfono {% if form.telefono.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}<div class="errorlist">{{ form.telefono.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                     {% endif %}
+                     {% if form.email_contacto %}
+                     <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.email_contacto.id_for_label }}">{{ form.email_contacto.label }} {% if form.email_contacto.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.email_contacto }}
+                            {% if form.email_contacto.errors %}<div class="errorlist">{{ form.email_contacto.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                     {% endif %}
+                </div>
+            {% elif user_type == 'Repartidor' %}
+                <div class="row g-3 mb-3">
+                     {% if form.telefono %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.telefono.id_for_label }}">Teléfono {% if form.telefono.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}<div class="errorlist">{{ form.telefono.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if form.tipo_vehiculo %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.tipo_vehiculo.id_for_label }}">{{ form.tipo_vehiculo.label }} {% if form.tipo_vehiculo.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.tipo_vehiculo }}
+                            {% if form.tipo_vehiculo.errors %}<div class="errorlist">{{ form.tipo_vehiculo.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div id="moto-fields" class="row g-3 mb-3">
+                     {% if form.patente %}
+                    <div class="col-md-6">
+                        <div class="form-group text-start">
+                            <label for="{{ form.patente.id_for_label }}">{{ form.patente.label }} <span class="required">*</span></label>
+                            {{ form.patente }}
+                            {% if form.patente.errors %}<div class="errorlist">{{ form.patente.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if form.cedula_vehiculo %}
+                    <div class="col-md-6">
+                         <div class="form-group text-start">
+                            <label for="{{ form.cedula_vehiculo.id_for_label }}">{{ form.cedula_vehiculo.label }} <span class="required">*</span></label>
+                            {{ form.cedula_vehiculo }}
+                            {% if form.cedula_vehiculo.errors %}<div class="errorlist">{{ form.cedula_vehiculo.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        
+            <h3 style="margin: 30px 0 20px 0; color: var(--dark); text-align: left; border-top: 1px solid #eee; padding-top: 20px;">Domicilio</h3>
+            <div class="row g-3 mb-3">
+                {% if form.calle %}
+                <div class="col-md-8">
+                    <div class="form-group text-start">
+                        <label for="{{ form.calle.id_for_label }}">Calle {% if form.calle.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.calle }}
+                         {% if form.calle.errors %}<div class="errorlist">{{ form.calle.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if form.numero %}
+                <div class="col-md-4">
+                    <div class="form-group text-start">
+                        <label for="{{ form.numero.id_for_label }}">Número {% if form.numero.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.numero }}
+                         {% if form.numero.errors %}<div class="errorlist">{{ form.numero.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% if form.entre_calles %}
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="form-group text-start">
+                        <label for="{{ form.entre_calles.id_for_label }}">Entre calles (Opcional)</label>
+                        {{ form.entre_calles }}
+                         {% if form.entre_calles.errors %}<div class="errorlist">{{ form.entre_calles.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="row g-3 mb-3">
+                 {% if form.ciudad %}
+                <div class="col-md-4">
+                    <div class="form-group text-start">
+                        <label for="{{ form.ciudad.id_for_label }}">Localidad {% if form.ciudad.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.ciudad }}
+                         {% if form.ciudad.errors %}<div class="errorlist">{{ form.ciudad.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if form.provincia %}
+                <div class="col-md-4">
+                    <div class="form-group text-start">
+                        <label for="{{ form.provincia.id_for_label }}">Provincia {% if form.provincia.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.provincia }}
+                         {% if form.provincia.errors %}<div class="errorlist">{{ form.provincia.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if form.codigo_postal %}
+                <div class="col-md-4">
+                    <div class="form-group text-start">
+                        <label for="{{ form.codigo_postal.id_for_label }}">Código Postal {% if form.codigo_postal.field.required %}<span class="required">*</span>{% endif %}</label>
+                        {{ form.codigo_postal }}
+                         {% if form.codigo_postal.errors %}<div class="errorlist">{{ form.codigo_postal.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        
+            <button type="submit" class="btn-registro">
+                <i class="fas fa-user"></i> + Registrarse como Cliente
+            </button>
+        </form>
+
+        <div class="back-link">
+            <p><a href="{% url 'select_signup' %}"><i class="fas fa-arrow-left"></i> ← Volver a selección</a></p>
+        </div>
+
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

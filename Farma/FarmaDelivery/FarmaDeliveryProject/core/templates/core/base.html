@@ -167,7 +167,6 @@
             display: flex;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border-radius: 30px;
-            overflow: hidden;
         }
         
         .search-bar input {
@@ -229,12 +228,15 @@
             margin-bottom: 40px;
         }
         
+        /* --- ¡REGLA MODIFICADA! --- */
         .product-card {
             background: white;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
             transition: transform 0.3s, box-shadow 0.3s;
+            display: flex; /* <-- AÑADIDO */
+            flex-direction: column; /* <-- AÑADIDO */
         }
         
         .product-card:hover {
@@ -252,8 +254,12 @@
             font-size: 3rem;
         }
         
+        /* --- ¡REGLA MODIFICADA! --- */
         .product-info {
             padding: 15px;
+            display: flex; /* <-- AÑADIDO */
+            flex-direction: column; /* <-- AÑADIDO */
+            flex-grow: 1; /* <-- AÑADIDO (Esto hace que la sección crezca) */
         }
         
         .product-title {
@@ -419,6 +425,50 @@
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             }
         }
+
+        #sugerencias-busqueda {
+    /* Mantiene los estilos de posicionamiento */
+    position: absolute;
+    top: 100%; /* Justo debajo del ancestro posicionado (.search-bar) */
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: none; /* Se cambia por JS */
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-top: none; /* Evita doble borde con el input */
+    border-radius: 0 0 0.25rem 0.25rem; /* Bordes redondeados abajo */
+
+    /* --- Ajustes importantes --- */
+    padding-top: 0; /* Quita padding superior del contenedor */
+    padding-bottom: 0; /* Quita padding inferior del contenedor */
+    padding-left: 0; /* Quita padding izquierdo del contenedor */
+    padding-right: 0; /* Quita padding derecho del contenedor */
+    margin-top: 1px; /* Pequeño espacio para que no se pegue al input */
+}
+
+/* Estilo para los items dentro del contenedor */
+#sugerencias-busqueda .list-group-item {
+    padding: 0.5rem 1rem; /* Añade padding a cada item (Bootstrap default) */
+    text-align: left; /* Alinea el texto a la izquierda */
+    border: none; /* Quita bordes individuales si los hubiera */
+    border-bottom: 1px solid #eee; /* Línea separadora */
+    cursor: pointer;
+    background-color: white; /* Asegura fondo blanco */
+    color: #212529; /* Color de texto oscuro */
+}
+
+/* Quita borde del último item */
+#sugerencias-busqueda .list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* Estilo hover para los items */
+#sugerencias-busqueda .list-group-item:hover {
+    background-color: #f8f9fa; /* Color de fondo suave al pasar el mouse */
+}
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -456,7 +506,8 @@
         </div>
     </header>
     
-    <main class="container">
+    <main class="container" style="margin-top: 30px;">
+        
         {% if messages %}
             {% for message in messages %}
                 <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
@@ -628,6 +679,96 @@
         });
     </script>
     
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}
+    {{ block.super }} {# Si heredas de base.html y ya tiene un bloque extra_js #}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('busqueda-medicamento');
+        const suggestionsContainer = document.getElementById('sugerencias-busqueda');
+        let debounceTimer;
+    
+        console.log('Autocompletar inicializado'); // Debug log
+        console.log('Search input:', searchInput); // Debug log
+        console.log('Suggestions container:', suggestionsContainer); // Debug log
+    
+        if (searchInput && suggestionsContainer) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const term = this.value.trim();
+                
+                console.log('Término de búsqueda:', term); // Debug log
+    
+                if (term.length < 2) { // No buscar si hay menos de 2 caracteres
+                    suggestionsContainer.innerHTML = '';
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+    
+                // Espera 300ms después de que el usuario deja de escribir
+                debounceTimer = setTimeout(() => {
+                    console.log('Realizando búsqueda para:', term); // Debug log
+                    
+                    const url = `{% url 'autocomplete_productos' %}?term=${encodeURIComponent(term)}`;
+                    console.log('URL de búsqueda:', url); // Debug log
+                    
+                    // Llama a la URL de autocompletado que creaste
+                    fetch(url)
+                        .then(response => {
+                            console.log('Respuesta del servidor:', response.status); // Debug log
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Datos recibidos:', data); // Debug log
+                            suggestionsContainer.innerHTML = ''; // Limpia sugerencias anteriores
+                            
+                            if (data && data.length > 0) {
+                                console.log('Mostrando', data.length, 'sugerencias'); // Debug log
+                                
+                                data.forEach(item => {
+                                    const suggestionItem = document.createElement('a');
+                                    suggestionItem.href = `{% url 'buscar_productos' %}?busqueda=${encodeURIComponent(item)}`; // Enlace a la búsqueda
+                                    suggestionItem.classList.add('list-group-item', 'list-group-item-action');
+                                    suggestionItem.textContent = item;
+                                    suggestionItem.style.cursor = 'pointer';
+    
+                                    suggestionItem.addEventListener('click', function(e) {
+                                        e.preventDefault(); // Evita navegar inmediatamente
+                                        searchInput.value = item; // Rellena el input
+                                        suggestionsContainer.style.display = 'none'; // Oculta sugerencias
+                                        console.log('Sugerencia seleccionada:', item); // Debug log
+                                        // Opcionalmente, podrías enviar el formulario aquí:
+                                        // searchInput.closest('form').submit();
+                                    });
+                                    
+                                    suggestionsContainer.appendChild(suggestionItem);
+                                });
+                                suggestionsContainer.style.display = 'block'; // Muestra el contenedor
+                            } else {
+                                console.log('No hay sugerencias disponibles'); // Debug log
+                                suggestionsContainer.style.display = 'none'; // Oculta si no hay resultados
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching suggestions:', error);
+                            suggestionsContainer.style.display = 'none';
+                        });
+                }, 300); // 300ms de debounce
+            });
+    
+            // Ocultar sugerencias si se hace clic fuera del input/contenedor
+            document.addEventListener('click', function(event) {
+                if (!searchInput.contains(event.target) && !suggestionsContainer.contains(event.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        } else {
+            console.error('No se encontraron los elementos necesarios para el autocompletar');
+        }
+    });
+    </script>
+    {% endblock %}
 </body>
 </html>

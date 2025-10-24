@@ -75,6 +75,7 @@ class Cliente(models.Model):
     )
     direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE)
     obra_social = models.ForeignKey(ObraSocial, on_delete=models.SET_NULL, null=True, blank=True)
+    numero_afiliado = models.CharField(max_length=50, blank=True, null=True) # Campo específico del cliente
     telefono = models.CharField(max_length=20, blank=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.CLIENTE)
@@ -149,7 +150,17 @@ class Repartidor(models.Model):
         ]
     )
     telefono = models.CharField(max_length=20)
-    vehiculo = models.CharField(max_length=50, blank=True)  # Tipo de vehículo
+    # ... dentro de class Repartidor(models.Model):
+
+    # Tus campos para el vehículo
+    TIPO_VEHICULO = [
+        ('BICI', 'Bicicleta'),
+        ('MOTO', 'Motocicleta'),
+    ]
+
+    tipo_vehiculo = models.CharField(max_length=10, choices=TIPO_VEHICULO, default='BICI')
+    # El campo 'patente' ya existe en el modelo de los chicos, así que no lo repetimos.
+    cedula_vehiculo = models.ImageField(upload_to='cedulas/', blank=True, null=True) # Tu campo de cédula
     patente = models.CharField(max_length=10, blank=True)
     activo = models.BooleanField(default=True)
     zona_cobertura = models.CharField(max_length=100, blank=True)
@@ -231,6 +242,11 @@ class Repartidor(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True)
+    
+    # --- ¡CAMBIO AÑADIDO AQUÍ! ---
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True, verbose_name="Imagen del Producto")
+    # -----------------------------
+    
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
     codigo_barras = models.CharField(max_length=50, unique=True, blank=True)
     categoria = models.CharField(max_length=100, blank=True)
@@ -340,6 +356,7 @@ class DetallePedido(models.Model):
     
     def __str__(self):
         return f"{self.producto.nombre} x{self.cantidad} - Pedido #{self.pedido.numero_pedido}"
+
 
 # Modelo RecetaMedica
 class RecetaMedica(models.Model):

@@ -1,3 +1,4 @@
+
 """
 Django settings for FarmaDeliveryProject project.
 
@@ -9,7 +10,7 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,10 +32,10 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-  'django.contrib.admin',
-    'django.contrib.auth',       # <-- Debe estar aquí
+    'django.contrib.admin',
+    'django.contrib.auth',      # <-- Debe estar aquí
     'django.contrib.contenttypes',
-    'django.contrib.sessions',   # <-- Debe estar aquí
+    'django.contrib.sessions',  # <-- Debe estar aquí
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
@@ -101,13 +102,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
+# https://docs.djangoproject.com/en/5.2/topics/i1n/
 
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
-USE_I18N = True
+USE_I1N = True
 
 USE_TZ = True
 
@@ -134,7 +135,7 @@ LOGIN_REDIRECT_URL = '/'
 
 # 2. URL a donde enviar al usuario DESPUÉS de un Logout.
 # Aquí lo redirigimos de vuelta a la página de login para que pueda iniciar sesión de nuevo.
-LOGOUT_REDIRECT_URL = '/accounts/login/'
+LOGOUT_REDIRECT_URL = '/'
 
 # Configuración de Email
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Para desarrollo
@@ -164,4 +165,4 @@ X_FRAME_OPTIONS = 'DENY'
 AUTHENTICATION_BACKENDS = [
     'core.auth_backends.DNIAuthBackend',  # Permite login con DNI
     'django.contrib.auth.backends.ModelBackend',  # Backend por defecto
-]            
+]
