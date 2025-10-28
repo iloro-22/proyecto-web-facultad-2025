@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
@@ -23,7 +22,8 @@ from .models import (
 )
 from .forms import (
     BusquedaProductoForm, RecetaForm, ConfirmacionPedidoForm,
-    DireccionForm, PerfilClienteForm, ContactoForm
+    DireccionForm, PerfilClienteForm, ContactoForm,
+    ClienteSignUpForm, FarmaciaSignUpForm, RepartidorSignUpForm
 )
 
 # Vista principal - página de inicio
@@ -158,9 +158,9 @@ def detalle_producto(request, producto_id):
         except DescuentoObraSocial.DoesNotExist:
             pass
     
-    # Formularios - pasar la dirección del cliente para autocompletado
+    # Formularios - pasar la dirección del cliente para autocompletado si existe
     receta_form = RecetaForm(requiere_receta=producto.requiere_receta)
-    direccion_form = DireccionForm(direccion_cliente=cliente.direccion)
+    direccion_form = DireccionForm(direccion_cliente=getattr(cliente, 'direccion', None))
     confirmacion_form = ConfirmacionPedidoForm()
     
     context = {
@@ -343,6 +343,7 @@ def perfil_cliente(request):
     """Vista para editar perfil del cliente"""
     try:
         cliente = Cliente.objects.get(user=request.user)
+        pedidos_entregados_count = cliente.pedidos.filter(estado=EstadoPedido.ENTREGADO).count()
     except Cliente.DoesNotExist:
         # Crear cliente si no existe
         cliente = Cliente.objects.create(
@@ -356,6 +357,7 @@ def perfil_cliente(request):
                 codigo_postal='0000'
             )
         )
+        pedidos_entregados_count = 0
     
     if request.method == 'POST':
         form = PerfilClienteForm(request.POST, instance=cliente)
@@ -369,6 +371,7 @@ def perfil_cliente(request):
     context = {
         'cliente': cliente,
         'form': form,
+        'pedidos_entregados_count': pedidos_entregados_count,
     }
     return render(request, 'core/perfil_cliente.html', context)
 
@@ -478,6 +481,35 @@ def api_pedidos_disponibles(request):
         'pedidos': pedidos_data
     })
 
+# API endpoint para obtener pedidos activos del repartidor autenticado
+@login_required
+def api_pedidos_activos(request):
+    """Pedidos ya aceptados por el repartidor actual y en curso"""
+    try:
+        repartidor = Repartidor.objects.get(user=request.user)
+    except Repartidor.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'No tienes permisos de repartidor'}, status=403)
+
+    pedidos = Pedido.objects.filter(repartidor=repartidor, estado=EstadoPedido.EN_CAMINO).order_by('-fecha_creacion')
+
+    data = []
+    for pedido in pedidos:
+        data.append({
+            'id': pedido.id,
+            'numero': pedido.numero_pedido,
+            'farmacia': pedido.farmacia.nombre,
+            'direccion_farmacia': str(pedido.farmacia.direccion),
+            'cliente': pedido.cliente.user.get_full_name(),
+            'direccion_cliente': str(pedido.direccion_entrega),
+            'metodo_pago': pedido.metodo_pago,
+            'monto_cobrar': float(pedido.total),
+            'productos': [detalle.producto.nombre for detalle in pedido.detalles.all()],
+            'estado': pedido.estado,
+            'total': float(pedido.total),
+        })
+
+    return JsonResponse({'success': True, 'pedidos': data})
+
 # Vista para aceptar un pedido
 @login_required
 def aceptar_pedido(request, pedido_id):
@@ -485,8 +517,7 @@ def aceptar_pedido(request, pedido_id):
     try:
         repartidor = Repartidor.objects.get(user=request.user)
     except Repartidor.DoesNotExist:
-        messages.error(request, 'No tienes permisos de repartidor.')
-        return redirect('home')
+        return JsonResponse({'error': 'No tienes permisos de repartidor'}, status=403)
     
     pedido = get_object_or_404(Pedido, id=pedido_id)
     
@@ -500,8 +531,7 @@ def aceptar_pedido(request, pedido_id):
             break
     
     if not pedido_cercano:
-        messages.error(request, 'Este pedido no está disponible o no está cerca de tu ubicación.')
-        return redirect('panel_repartidor')
+        return JsonResponse({'error': 'Pedido no disponible o fuera de alcance'}, status=400)
     
     # Asignar el pedido al repartidor
     pedido.repartidor = repartidor
@@ -589,9 +619,15 @@ def panel_farmacia(request):
         farmacia=farmacia,
         estado=EstadoPedido.PREPARANDO
     ).order_by('fecha_creacion')
+    # Pedidos listos esperando repartidor
+    pedidos_listos = Pedido.objects.filter(
+        farmacia=farmacia,
+        estado=EstadoPedido.LISTO
+    ).order_by('fecha_creacion')
     
     # Obtener productos del inventario
-    productos = Producto.objects.filter(farmacia=farmacia, activo=True).order_by('nombre')
+    # Mostrar todos los productos de la farmacia (activos o no) para que el inventario nunca aparezca vacío
+    productos = Producto.objects.filter(farmacia=farmacia).order_by('nombre')
     
     # Clasificar productos por estado de stock
     productos_sin_stock = productos.filter(stock_disponible=0)
@@ -602,10 +638,12 @@ def panel_farmacia(request):
         'farmacia': farmacia,
         'pedidos_nuevos': pedidos_nuevos,
         'pedidos_preparando': pedidos_preparando,
+        'pedidos_listos': pedidos_listos,
         'productos_sin_stock': productos_sin_stock,
         'productos_poco_stock': productos_poco_stock,
         'productos_disponibles': productos_disponibles,
         'total_productos': productos.count(),
+        'active_tab': 'pedidos',
     }
     return render(request, 'core/panel_farmacia.html', context)
 
@@ -652,8 +690,8 @@ def confirmar_receta_preparar(request, pedido_id):
     if pedido.estado != EstadoPedido.PENDIENTE:
         return JsonResponse({'error': 'El pedido no está en estado pendiente'}, status=400)
     
-    # Cambiar estado a preparando
-    pedido.estado = EstadoPedido.PREPARANDO
+    # Cambiar estado a LISTO (esperando repartidor)
+    pedido.estado = EstadoPedido.LISTO
     pedido.save()
     
     # Marcar receta como validada si existe
@@ -717,8 +755,8 @@ def entregar_al_repartidor(request, pedido_id):
     
     pedido = get_object_or_404(Pedido, id=pedido_id, farmacia=farmacia)
     
-    if pedido.estado != EstadoPedido.PREPARANDO:
-        return JsonResponse({'error': 'El pedido no está en preparación'}, status=400)
+    if pedido.estado not in [EstadoPedido.PREPARANDO, EstadoPedido.LISTO]:
+        return JsonResponse({'error': 'El pedido no está listo para entregar al repartidor'}, status=400)
     
     # Cambiar estado a listo para entrega
     pedido.estado = EstadoPedido.LISTO
@@ -732,6 +770,31 @@ def entregar_al_repartidor(request, pedido_id):
         'mensaje': 'Pedido entregado al repartidor',
         'nuevo_estado': pedido.get_estado_display()
     })
+
+# Repartidor marca pedido como entregado
+@login_required
+def entregar_pedido_repartidor(request, pedido_id):
+    try:
+        repartidor = Repartidor.objects.get(user=request.user)
+    except Repartidor.DoesNotExist:
+        return JsonResponse({'error': 'No tienes permisos de repartidor'}, status=403)
+    
+    pedido = get_object_or_404(Pedido, id=pedido_id, repartidor=repartidor)
+    
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    if pedido.estado != EstadoPedido.EN_CAMINO:
+        return JsonResponse({'error': 'El pedido no está en camino'}, status=400)
+    
+    # Marcar como entregado
+    pedido.estado = EstadoPedido.ENTREGADO
+    pedido.fecha_entrega_real = timezone.now()
+    pedido.save()
+    
+    enviar_email_cambio_estado(pedido, EstadoPedido.EN_CAMINO)
+    
+    return JsonResponse({'success': True, 'mensaje': 'Entrega confirmada', 'pedido_id': pedido.id})
 
 # Vista para marcar pedido como listo para retiro
 @login_required
@@ -763,28 +826,8 @@ def listo_para_retiro(request, pedido_id):
 # Vista para gestión de inventario
 @login_required
 def inventario_farmacia(request):
-    """Vista para gestión de inventario de la farmacia"""
-    try:
-        farmacia = Farmacia.objects.get(user=request.user)
-    except Farmacia.DoesNotExist:
-        messages.error(request, 'No tienes permisos de farmacia.')
-        return redirect('home')
-    
-    productos = Producto.objects.filter(farmacia=farmacia, activo=True).order_by('nombre')
-    
-    # Clasificar productos por estado de stock
-    productos_sin_stock = productos.filter(stock_disponible=0)
-    productos_poco_stock = productos.filter(stock_disponible__gt=0, stock_disponible__lte=5)
-    productos_disponibles = productos.filter(stock_disponible__gt=5)
-    
-    context = {
-        'farmacia': farmacia,
-        'productos_sin_stock': productos_sin_stock,
-        'productos_poco_stock': productos_poco_stock,
-        'productos_disponibles': productos_disponibles,
-        'total_productos': productos.count(),
-    }
-    return render(request, 'core/panel_farmacia.html', context)
+    """Redirige al panel de farmacia con la pestaña Inventario activa."""
+    return redirect('panel_farmacia')
 
 # Vista para actualizar stock de producto
 @login_required
@@ -826,7 +869,7 @@ def configuracion_precios(request):
         messages.error(request, 'No tienes permisos de farmacia.')
         return redirect('home')
     
-    productos = Producto.objects.filter(farmacia=farmacia, activo=True).order_by('nombre')
+    productos = Producto.objects.filter(farmacia=farmacia).order_by('nombre')
     obras_sociales = ObraSocial.objects.all().order_by('nombre')
     
     # Obtener descuentos existentes
@@ -943,34 +986,6 @@ def enviar_email_cambio_estado(pedido, estado_anterior):
         )
     except Exception as e:
         print(f"Error enviando email: {e}")
-=======
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout
-from django.contrib.auth import login as auth_login
-from django.contrib.auth.views import LoginView
-from django.contrib.auth.models import User
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from django.core.mail import send_mail
-from django.conf import settings
-from django.utils import timezone
-from django.db import transaction
-from django.core.paginator import Paginator
-import uuid
-import os
-from datetime import datetime, timedelta
-
-from .models import (
-    Cliente, Farmacia, Repartidor, Producto, Pedido, 
-    DetallePedido, Direccion, ObraSocial, MetodoPago,
-    EstadoPedido, DescuentoObraSocial, RecetaMedica
-)
-from .forms import (
-    BusquedaProductoForm, RecetaForm, ConfirmacionPedidoForm,
-    DireccionForm, PerfilClienteForm, ContactoForm,
-    ClienteSignUpForm, FarmaciaSignUpForm, RepartidorSignUpForm
-)
 
 # Vista principal - página de inicio
 @login_required 
@@ -1156,9 +1171,9 @@ def detalle_producto(request, producto_id):
         except DescuentoObraSocial.DoesNotExist:
             pass
     
-    # Formularios
+    # Formularios - pasar la dirección del cliente para autocompletado si existe
     receta_form = RecetaForm(requiere_receta=producto.requiere_receta)
-    direccion_form = DireccionForm()
+    direccion_form = DireccionForm(direccion_cliente=getattr(cliente, 'direccion', None))
     confirmacion_form = ConfirmacionPedidoForm()
     
     context = {
@@ -1893,8 +1908,6 @@ def enviar_email_cambio_estado(pedido, estado_anterior):
         print(f"Error enviando email: {e}")
 
 
-# --- TUS VISTAS DE REGISTRO (AÑADIDAS AL FINAL) ---
-
 def select_signup(request):
     """Muestra la página para elegir qué tipo de usuario registrar."""
     return render(request, 'registration/select_signup.html')
@@ -1926,7 +1939,7 @@ def farmacia_signup(request):
 def repartidor_signup(request):
     """Maneja el registro de un nuevo Repartidor."""
     if request.method == 'POST':
-        form = RepartidorSignUpForm(request.POST, request.FILES) # Importante: request.FILES
+        form = RepartidorSignUpForm(request.POST, request.FILES)  # Importante: request.FILES
         if form.is_valid():
             form.save()
             messages.info(request, 'Solicitud de registro de repartidor enviada. Quedará pendiente de aprobación.')
@@ -1934,4 +1947,3 @@ def repartidor_signup(request):
     else:
         form = RepartidorSignUpForm()
     return render(request, 'registration/signup_form.html', {'form': form, 'user_type': 'Repartidor'})
->>>>>>> bf57f724a994412598a97a7cc751b19541788fa9

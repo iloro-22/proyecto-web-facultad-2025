@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0003_recetamedica'),
+        ('core', '0004_repartidor_latitud_fija_repartidor_longitud_fija_and_more'),
         ('core', '0005_producto_imagen'),
     ]
 

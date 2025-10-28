@@ -23,6 +23,7 @@ urlpatterns = [
     # URLs para repartidores
     path('repartidor/', views.panel_repartidor, name='panel_repartidor'),
     path('repartidor/aceptar/<int:pedido_id>/', views.aceptar_pedido, name='aceptar_pedido'),
+    path('repartidor/entregar/<int:pedido_id>/', views.entregar_pedido_repartidor, name='entregar_pedido_repartidor'),
 
     # URLs de Registro (movidas desde el urls.py principal)
     path('accounts/select_signup/', views.select_signup, name='select_signup'),
@@ -33,6 +34,8 @@ urlpatterns = [
     # API endpoints
     path('api/geocodificar/', views.geocodificar_direccion, name='geocodificar_direccion'),
     path('api/ubicacion/', views.actualizar_ubicacion_repartidor, name='actualizar_ubicacion_repartidor'),
+    path('api/pedidos-disponibles/', views.api_pedidos_disponibles, name='api_pedidos_disponibles'),
+    path('api/pedidos-activos/', views.api_pedidos_activos, name='api_pedidos_activos'),
 
     # Puedes añadir más URLs específicas de 'core' aquí
 ]

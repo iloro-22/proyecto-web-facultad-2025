@@ -145,24 +145,26 @@ function renderPedidosDisponibles() {
 
 function cargarPedidosActivos() {
     console.log('Cargando pedidos activos...');
-    
-    // Simular datos de pedidos activos
-    pedidosActivos = [
-        {
-            id: 4,
-            numero: 'FD20250121004',
-            farmacia: 'Farmacia del Centro',
-            direccion_farmacia: 'Av. Corrientes 1234, CABA',
-            direccion_cliente: 'Av. Santa Fe 5678, CABA',
-            cliente: 'Carlos Rodríguez',
-            metodo_pago: 'EFECTIVO',
-            monto_cobrar: 250,
-            productos: ['Amoxicilina 500mg'],
-            estado: 'EN_CAMINO'
+    // Cargar pedidos activos reales (si existe un endpoint: ajustar URL si es necesario)
+    fetch('/api/pedidos-activos/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
-    ];
-    
-    renderPedidosActivos();
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.success) {
+            pedidosActivos = data.pedidos || [];
+        } else {
+            pedidosActivos = [];
+        }
+        renderPedidosActivos();
+    })
+    .catch(() => {
+        pedidosActivos = [];
+        renderPedidosActivos();
+    });
 }
 
 function renderPedidosActivos() {
@@ -367,13 +369,26 @@ function confirmarEntrega(pedidoId) {
     if (!pedido) return;
     
     if (confirm(`¿Confirmas que has entregado exitosamente el pedido #${pedido.numero}?`)) {
-        // Remover de activos
-        pedidosActivos = pedidosActivos.filter(p => p.id !== pedidoId);
-        
-        // Actualizar vista
-        renderPedidosActivos();
-        
-        showToast('success', 'Entrega Confirmada', `Pedido #${pedido.numero} entregado exitosamente`);
+        fetch(`/repartidor/entregar/${pedidoId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                pedidosActivos = pedidosActivos.filter(p => p.id !== pedidoId);
+                renderPedidosActivos();
+                showToast('success', 'Entrega Confirmada', `Pedido #${pedido.numero} entregado exitosamente`);
+            } else {
+                showToast('error', 'Error', data.error || 'No se pudo confirmar la entrega');
+            }
+        })
+        .catch(() => {
+            showToast('error', 'Error', 'No se pudo confirmar la entrega');
+        });
     }
 }
 

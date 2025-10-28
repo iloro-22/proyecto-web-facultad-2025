@@ -100,7 +100,7 @@
             </div>
             <div class="card-body">
                 <div class="timeline">
-                    <div class="timeline-item {% if pedido.estado == 'PENDIENTE' %}active{% endif %}">
+                    <div class="timeline-item {% if pedido.estado == 'PENDIENTE' or pedido.estado == 'PREPARANDO' or pedido.estado == 'LISTO' or pedido.estado == 'EN_CAMINO' or pedido.estado == 'ENTREGADO' %}active{% endif %}">
                         <div class="timeline-marker bg-warning"></div>
                         <div class="timeline-content">
                             <h6>Pedido Pendiente</h6>
@@ -109,15 +109,9 @@
                         </div>
                     </div>
                     
-                    <div class="timeline-item {% if pedido.estado == 'CONFIRMADO' %}active{% endif %}">
-                        <div class="timeline-marker bg-info"></div>
-                        <div class="timeline-content">
-                            <h6>Pedido Confirmado</h6>
-                            <p class="text-muted mb-0">La farmacia ha confirmado tu pedido</p>
-                        </div>
-                    </div>
                     
-                    <div class="timeline-item {% if pedido.estado == 'PREPARANDO' %}active{% endif %}">
+                    
+                    <div class="timeline-item {% if pedido.estado == 'PREPARANDO' or pedido.estado == 'LISTO' or pedido.estado == 'EN_CAMINO' or pedido.estado == 'ENTREGADO' %}active{% endif %}">
                         <div class="timeline-marker bg-primary"></div>
                         <div class="timeline-content">
                             <h6>Preparando Pedido</h6>
@@ -125,7 +119,7 @@
                         </div>
                     </div>
                     
-                    <div class="timeline-item {% if pedido.estado == 'LISTO' %}active{% endif %}">
+                    <div class="timeline-item {% if pedido.estado == 'LISTO' or pedido.estado == 'EN_CAMINO' or pedido.estado == 'ENTREGADO' %}active{% endif %}">
                         <div class="timeline-marker bg-info"></div>
                         <div class="timeline-content">
                             <h6>Listo para Entrega</h6>
@@ -133,7 +127,7 @@
                         </div>
                     </div>
                     
-                    <div class="timeline-item {% if pedido.estado == 'EN_CAMINO' %}active{% endif %}">
+                    <div class="timeline-item {% if pedido.estado == 'EN_CAMINO' or pedido.estado == 'ENTREGADO' %}active{% endif %}">
                         <div class="timeline-marker bg-warning"></div>
                         <div class="timeline-content">
                             <h6>En Camino</h6>

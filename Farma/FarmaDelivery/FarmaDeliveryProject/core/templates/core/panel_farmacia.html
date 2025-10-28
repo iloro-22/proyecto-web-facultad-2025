@@ -50,11 +50,11 @@
     <!-- Navegación por Pestañas -->
     <div class="farmacia-tabs">
         <nav class="tab-navigation">
-            <button class="tab-btn active" data-tab="pedidos">
+            <button class="tab-btn {% if active_tab == 'pedidos' %}active{% endif %}" data-tab="pedidos">
                 <i class="fas fa-shopping-cart"></i>
                 Pedidos
             </button>
-            <button class="tab-btn" data-tab="inventario">
+            <button class="tab-btn {% if active_tab == 'inventario' %}active{% endif %}" data-tab="inventario">
                 <i class="fas fa-boxes"></i>
                 Inventario
             </button>
@@ -72,7 +72,7 @@
     <!-- Contenido Principal -->
     <div class="farmacia-content">
         <!-- Pestaña Pedidos -->
-        <div class="tab-content active" id="pedidos-tab">
+        <div class="tab-content {% if active_tab == 'pedidos' %}active{% endif %}" id="pedidos-tab">
             <div class="pedidos-container">
                 <!-- Sección Pedidos Nuevos -->
                 <div class="pedidos-section">
@@ -173,11 +173,61 @@
                         {% endfor %}
                     </div>
                 </div>
+
+                <!-- Sección Pedidos Aceptados (Esperando Repartidor) -->
+                <div class="pedidos-section">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-truck-loading"></i>
+                            Pedidos Aceptados (Esperando Repartidor)
+                            <span class="badge">{{ pedidos_listos.count }}</span>
+                        </h2>
+                    </div>
+                    <div class="pedidos-grid" id="pedidos-listos">
+                        {% for pedido in pedidos_listos %}
+                        <div class="pedido-card" data-pedido-id="{{ pedido.id }}">
+                            <div class="card-header">
+                                <div class="pedido-info">
+                                    <h3 class="pedido-numero">#{{ pedido.numero_pedido }}</h3>
+                                    <p class="cliente-nombre">{{ pedido.cliente.user.get_full_name }}</p>
+                                </div>
+                                <div class="pedido-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>{{ pedido.fecha_creacion|date:"H:i" }}</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="pedido-details">
+                                    <div class="detail-item">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>{{ pedido.direccion_entrega }}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <i class="fas fa-dollar-sign"></i>
+                                        <span>${{ pedido.total }}</span>
+                                    </div>
+                                </div>
+                                <div class="card-actions">
+                                    <button class="btn btn-primary btn-sm ver-detalle" data-pedido-id="{{ pedido.id }}">
+                                        <i class="fas fa-eye"></i>
+                                        Ver Detalle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="empty-state">
+                            <i class="fas fa-truck"></i>
+                            <p>No hay pedidos aceptados esperando repartidor</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Pestaña Inventario -->
-        <div class="tab-content" id="inventario-tab">
+        <div class="tab-content {% if active_tab == 'inventario' %}active{% endif %}" id="inventario-tab">
             <div class="inventario-container">
                 <div class="inventario-header">
                     <h2>Gestión de Inventario</h2>
@@ -220,14 +270,14 @@
                     </h3>
                     <div class="productos-grid">
                         {% for producto in productos_sin_stock %}
-                        <div class="producto-card sin-stock">
+                        <div class="producto-card sin-stock" data-producto-id="{{ producto.id }}">
                             <div class="producto-info">
                                 <h4>{{ producto.nombre }}</h4>
                                 <p class="laboratorio">{{ producto.laboratorio }}</p>
                                 <p class="precio">${{ producto.precio_base }}</p>
                             </div>
                             <div class="stock-controls">
-                                <input type="number" class="stock-input" value="0" min="0" data-producto-id="{{ producto.id }}">
+                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}">
                                 <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
                                     Actualizar
                                 </button>
@@ -250,7 +300,7 @@
                     </h3>
                     <div class="productos-grid">
                         {% for producto in productos_poco_stock %}
-                        <div class="producto-card poco-stock">
+                        <div class="producto-card poco-stock" data-producto-id="{{ producto.id }}">
                             <div class="producto-info">
                                 <h4>{{ producto.nombre }}</h4>
                                 <p class="laboratorio">{{ producto.laboratorio }}</p>
@@ -280,7 +330,7 @@
                     </h3>
                     <div class="productos-grid">
                         {% for producto in productos_disponibles %}
-                        <div class="producto-card disponible">
+                        <div class="producto-card disponible" data-producto-id="{{ producto.id }}">
                             <div class="producto-info">
                                 <h4>{{ producto.nombre }}</h4>
                                 <p class="laboratorio">{{ producto.laboratorio }}</p>

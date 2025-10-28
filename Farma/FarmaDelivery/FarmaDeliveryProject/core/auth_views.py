@@ -4,6 +4,7 @@ from .models import Farmacia, Repartidor, Cliente
 
 class CustomLoginView(LoginView):
     """Vista de login personalizada que redirige según el tipo de usuario"""
+    template_name = 'registration/login.html'
     
     def get_success_url(self):
         """Determinar la URL de redirección según el tipo de usuario"""

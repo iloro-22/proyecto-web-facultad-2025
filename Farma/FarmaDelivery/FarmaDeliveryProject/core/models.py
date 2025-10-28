@@ -299,7 +299,6 @@ class ListaProductos(models.Model):
 # Enumerativo para estados de pedido
 class EstadoPedido(models.TextChoices):
     PENDIENTE = 'PENDIENTE', 'Pendiente'
-    CONFIRMADO = 'CONFIRMADO', 'Confirmado'
     PREPARANDO = 'PREPARANDO', 'Preparando'
     LISTO = 'LISTO', 'Listo para entrega'
     EN_CAMINO = 'EN_CAMINO', 'En camino'

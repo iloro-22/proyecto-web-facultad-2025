@@ -23,7 +23,7 @@
                     <i class="fas fa-motorcycle"></i>
                     Panel Repartidor
                 </h1>
-                <p class="repartidor-subtitle">{{ repartidor.user.get_full_name }} - Vehículo: {{ repartidor.vehiculo }}</p>
+                <p class="repartidor-subtitle">{{ repartidor.user.get_full_name }} - Vehículo: {{ repartidor.get_tipo_vehiculo_display }}</p>
             </div>
             <div class="header-actions">
                 <div class="status-indicator">
@@ -129,7 +129,7 @@
                             <form id="vehiculo-form">
                                 <div class="mb-3">
                                     <label class="form-label">Tipo de Vehículo</label>
-                                    <input type="text" class="form-control" id="vehiculo" value="{{ repartidor.vehiculo }}">
+                                    <input type="text" class="form-control" id="vehiculo" value="{{ repartidor.get_tipo_vehiculo_display }}">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Patente/Matrícula</label>

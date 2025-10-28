@@ -368,7 +368,7 @@ def crear_delivery(direcciones):
         user=user_delivery,
         dni='87654321',
         telefono='0221-555-5555',
-        vehiculo='Moto',
+        tipo_vehiculo='MOTO',
         patente='ABC123',
         zona_cobertura='La Plata Centro',
         ubicacion_fija=True,  # Habilitar ubicación fija para pruebas
@@ -383,7 +383,7 @@ def crear_delivery(direcciones):
     print(f"   Usuario: {repartidor.dni}")
     print(f"   Contraseña: delivery123")
     print(f"   Ubicación: {direcciones[4].calle} {direcciones[4].numero}")
-    print(f"   Vehículo: {repartidor.vehiculo} - Patente: {repartidor.patente}")
+    print(f"   Vehículo: {repartidor.get_tipo_vehiculo_display()} - Patente: {repartidor.patente}")
     
     return repartidor
 
@@ -438,7 +438,7 @@ def main():
     print(f"   - Contraseña: delivery123")
     print(f"   - Nombre: {delivery.user.first_name} {delivery.user.last_name}")
     print(f"   - Ubicación: 3 45-46")
-    print(f"   - Vehículo: {delivery.vehiculo} - Patente: {delivery.patente}")
+    print(f"   - Vehículo: {delivery.get_tipo_vehiculo_display()} - Patente: {delivery.patente}")
     print(f"   - Rol: REPARTIDOR")
     print()
     

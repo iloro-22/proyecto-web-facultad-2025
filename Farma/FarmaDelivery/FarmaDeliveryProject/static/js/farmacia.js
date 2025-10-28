@@ -117,6 +117,9 @@ function confirmarReceta(pedidoId) {
             showToast('success', 'Éxito', data.mensaje);
             movePedidoToPreparando(pedidoId);
             updateCounters();
+            // Cerrar modal automáticamente tras confirmar
+            const modal = document.getElementById('pedido-modal');
+            if (modal) modal.classList.remove('show');
         } else {
             showToast('error', 'Error', data.error);
         }
@@ -145,6 +148,9 @@ function cancelarReceta(pedidoId) {
             showToast('success', 'Éxito', data.mensaje);
             removePedidoFromView(pedidoId);
             updateCounters();
+            // Cerrar modal automáticamente
+            const modal = document.getElementById('pedido-modal');
+            if (modal) modal.classList.remove('show');
         } else {
             showToast('error', 'Error', data.error);
         }
@@ -173,6 +179,9 @@ function entregarAlRepartidor(pedidoId) {
             showToast('success', 'Éxito', data.mensaje);
             removePedidoFromView(pedidoId);
             updateCounters();
+            // Cerrar modal automáticamente
+            const modal = document.getElementById('pedido-modal');
+            if (modal) modal.classList.remove('show');
         } else {
             showToast('error', 'Error', data.error);
         }
@@ -201,6 +210,9 @@ function listoParaRetiro(pedidoId) {
             showToast('success', 'Éxito', data.mensaje);
             removePedidoFromView(pedidoId);
             updateCounters();
+            // Cerrar modal automáticamente
+            const modal = document.getElementById('pedido-modal');
+            if (modal) modal.classList.remove('show');
         } else {
             showToast('error', 'Error', data.error);
         }
@@ -293,7 +305,7 @@ function actualizarStock(productoId, nuevoStock) {
     fetch(`/farmacia/inventario/producto/${productoId}/actualizar-stock/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': getCookie('csrftoken'),
             'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: `stock=${nuevoStock}`
