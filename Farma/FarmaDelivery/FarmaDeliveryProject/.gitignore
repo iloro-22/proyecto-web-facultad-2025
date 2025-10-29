@@ -1,11 +1,6 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Base de datos SQLite
+# Base de datos
 db.sqlite3
-*.sqlite3
 
-# Entorno virtual (si está dentro del proyecto)
-venv/
+# Cache de Python
+__pycache__/
+*.pyc

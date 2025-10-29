@@ -34,9 +34,12 @@
                     
                     <div class="mb-3">
                         <label for="categoria" class="form-label">Categoría</label>
-                        <input type="text" class="form-control" name="categoria" value="{{ form.categoria.value|default:'' }}">
+                        <select class="form-select" id="categoria" name="categoria">
+                            <option value="" {% if not form.categoria.value %}selected{% endif %}>Todas las categorías</option>
+                            <option value="con_receta" {% if form.categoria.value == 'con_receta' %}selected{% endif %}>Con Receta</option>
+                            <option value="venta_libre" {% if form.categoria.value == 'venta_libre' %}selected{% endif %}>Venta Libre</option>
+                        </select>
                     </div>
-                    
                     <div class="mb-3">
                         <label for="farmacia" class="form-label">Farmacia</label>
                         <select class="form-control" name="farmacia">
