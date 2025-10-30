@@ -40,6 +40,24 @@ def home_page(request):
     except Cliente.DoesNotExist:
         direccion_cliente = None
     
+    # Intentar completar coordenadas faltantes de la dirección del cliente
+    if direccion_cliente and (not direccion_cliente.latitud or not direccion_cliente.longitud):
+        try:
+            import requests
+            direccion_completa = f"{direccion_cliente.calle} {direccion_cliente.numero}, {direccion_cliente.ciudad}, {direccion_cliente.provincia}, Argentina"
+            url = "https://nominatim.openstreetmap.org/search"
+            params = {'q': direccion_completa, 'format': 'json', 'limit': 1, 'countrycodes': 'ar'}
+            headers = {'User-Agent': 'FarmaDelivery/1.0'}
+            r = requests.get(url, params=params, headers=headers, timeout=6)
+            if r.status_code == 200 and r.json():
+                lat = float(r.json()[0]['lat'])
+                lon = float(r.json()[0]['lon'])
+                direccion_cliente.latitud = lat
+                direccion_cliente.longitud = lon
+                direccion_cliente.save()
+        except Exception:
+            pass
+
     # Obtener productos destacados de farmacias cercanas
     productos_destacados = []
     if direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud:
@@ -89,11 +107,34 @@ def buscar_productos(request):
             productos = productos.filter(nombre__icontains=busqueda)
         
         if categoria:
-            productos = productos.filter(categoria__icontains=categoria)
+            if categoria == 'con_receta':
+                productos = productos.filter(requiere_receta=True)
+            elif categoria == 'venta_libre':
+                productos = productos.filter(requiere_receta=False)
+            else:
+                productos = productos.filter(categoria__icontains=categoria)
             
         if farmacia:
             productos = productos.filter(farmacia=farmacia)
     
+    # Intentar completar coordenadas faltantes de la dirección del cliente
+    if direccion_cliente and (not direccion_cliente.latitud or not direccion_cliente.longitud):
+        try:
+            import requests
+            direccion_completa = f"{direccion_cliente.calle} {direccion_cliente.numero}, {direccion_cliente.ciudad}, {direccion_cliente.provincia}, Argentina"
+            url = "https://nominatim.openstreetmap.org/search"
+            params = {'q': direccion_completa, 'format': 'json', 'limit': 1, 'countrycodes': 'ar'}
+            headers = {'User-Agent': 'FarmaDelivery/1.0'}
+            r = requests.get(url, params=params, headers=headers, timeout=6)
+            if r.status_code == 200 and r.json():
+                lat = float(r.json()[0]['lat'])
+                lon = float(r.json()[0]['lon'])
+                direccion_cliente.latitud = lat
+                direccion_cliente.longitud = lon
+                direccion_cliente.save()
+        except Exception:
+            pass
+
     # Filtrar productos por farmacias cercanas (2km) si el cliente tiene dirección
     productos_cercanos = []
     if direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud:
@@ -122,7 +163,8 @@ def buscar_productos(request):
         'productos': page_obj,
         'total_resultados': len(productos_cercanos),
         'direccion_cliente': direccion_cliente,
-        'filtro_distancia': direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud,
+        'aplico_cercania': bool(direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud),
+        'tiene_direccion': bool(direccion_cliente),
     }
     return render(request, 'core/buscar_productos.html', context)
 

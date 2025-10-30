@@ -53,7 +53,7 @@ class Direccion(models.Model):
 class ObraSocial(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     plan = models.CharField(max_length=100)
-    numero_afiliado = models.CharField(max_length=50, unique=True)
+    numero_afiliado = models.CharField(max_length=50, blank=True, null=True) # <-- AÑADE ESTO
     
     class Meta:
         verbose_name = 'Obra Social'
@@ -89,7 +89,7 @@ class Cliente(models.Model):
 
 # Modelo Farmacia
 class Farmacia(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='farmacia')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='farmacias')
     nombre = models.CharField(max_length=100)
     direccion = models.ForeignKey(Direccion, on_delete=models.CASCADE)
     matricula = models.CharField(max_length=20, unique=True)

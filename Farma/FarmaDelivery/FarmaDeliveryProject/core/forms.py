@@ -3,8 +3,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.utils.safestring import mark_safe
 from .models import (
-    Cliente, Farmacia, Repartidor, Producto, Pedido, 
+    Cliente, Farmacia, Repartidor, Producto, Pedido,
     DetallePedido, Direccion, ObraSocial, MetodoPago,
     DescuentoObraSocial
 )
@@ -21,11 +22,14 @@ class BusquedaProductoForm(forms.Form):
         }),
         required=False
     )
-    categoria = forms.CharField(
-        max_length=100,
-        widget=forms.TextInput(attrs={
+    categoria = forms.ChoiceField(
+        choices=[
+            ('', 'Todas las categorías'),
+            ('con_receta', 'Con Receta'),
+            ('venta_libre', 'Venta Libre'),
+        ],
+        widget=forms.Select(attrs={
             'class': 'form-control',
-            'placeholder': 'Categoría (opcional)',
             'id': 'categoria-producto'
         }),
         required=False
@@ -61,11 +65,11 @@ class RecetaForm(forms.Form):
         required=False,
         help_text="Información adicional sobre la receta"
     )
-    
+
     def __init__(self, *args, **kwargs):
         requiere_receta = kwargs.pop('requiere_receta', False)
         super().__init__(*args, **kwargs)
-        
+
         if requiere_receta:
             self.fields['archivo_receta'].required = True
             self.fields['archivo_receta'].help_text = "Sube una foto o PDF de tu receta médica (obligatorio)"
@@ -91,7 +95,7 @@ class ConfirmacionPedidoForm(forms.Form):
         required=False,
         help_text="Instrucciones especiales para la entrega"
     )
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Personalizar las opciones de método de pago
@@ -110,7 +114,7 @@ class DireccionForm(forms.ModelForm):
         # Extraer la dirección del cliente si se proporciona
         direccion_cliente = kwargs.pop('direccion_cliente', None)
         super().__init__(*args, **kwargs)
-        
+
         # Si hay una dirección del cliente, usarla como valores iniciales
         if direccion_cliente:
             self.fields['calle'].initial = direccion_cliente.calle
@@ -118,9 +122,10 @@ class DireccionForm(forms.ModelForm):
             self.fields['ciudad'].initial = direccion_cliente.ciudad
             self.fields['provincia'].initial = direccion_cliente.provincia
             self.fields['codigo_postal'].initial = direccion_cliente.codigo_postal
-    
+
     class Meta:
         model = Direccion
+        # Asegúrate de que 'entre_calles' no esté aquí si no existe en el modelo
         fields = ['calle', 'numero', 'ciudad', 'provincia', 'codigo_postal']
         widgets = {
             'calle': forms.TextInput(attrs={
@@ -149,25 +154,25 @@ class DireccionForm(forms.ModelForm):
                 'id': 'direccion-codigo-postal'
             }),
         }
-    
+
     def clean(self):
         cleaned_data = super().clean()
         calle = cleaned_data.get('calle')
         numero = cleaned_data.get('numero')
         ciudad = cleaned_data.get('ciudad')
         provincia = cleaned_data.get('provincia')
-        
+
         # Validación básica
         if not all([calle, numero]):
             raise forms.ValidationError('Calle y número son obligatorios.')
-        
+
         return cleaned_data
 
 class PerfilClienteForm(forms.ModelForm):
     """Formulario para editar perfil del cliente"""
     class Meta:
         model = Cliente
-        fields = ['telefono', 'fecha_nacimiento', 'obra_social']
+        fields = ['telefono', 'fecha_nacimiento', 'obra_social', 'numero_afiliado']
         widgets = {
             'telefono': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -179,8 +184,20 @@ class PerfilClienteForm(forms.ModelForm):
             }),
             'obra_social': forms.Select(attrs={
                 'class': 'form-control'
+            }),
+            'numero_afiliado': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número de afiliado'
             })
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        obra = cleaned.get('obra_social')
+        nro = cleaned.get('numero_afiliado')
+        if obra and not nro:
+            raise forms.ValidationError('Debes ingresar el número de afiliado para la obra social seleccionada.')
+        return cleaned
 
 class ContactoForm(forms.Form):
     """Formulario de contacto para soporte"""
@@ -226,7 +243,7 @@ class ActualizarStockForm(forms.Form):
         }),
         label='Stock Disponible'
     )
-    
+
     def clean_stock(self):
         stock = self.cleaned_data.get('stock')
         if stock is not None and stock < 0:
@@ -267,42 +284,42 @@ class DescuentoObraSocialForm(forms.ModelForm):
             'descuento_porcentaje': 'Descuento Porcentual (%)',
             'descuento_fijo': 'Descuento Fijo ($)',
         }
-    
+
     def __init__(self, *args, **kwargs):
         farmacia = kwargs.pop('farmacia', None)
         super().__init__(*args, **kwargs)
-        
+
         if farmacia:
             # Filtrar productos solo de esta farmacia
             self.fields['producto'].queryset = Producto.objects.filter(
-                farmacia=farmacia, 
+                farmacia=farmacia,
                 activo=True
             ).order_by('nombre')
-        
+
         # Hacer que los campos de descuento sean opcionales
         self.fields['descuento_porcentaje'].required = False
         self.fields['descuento_fijo'].required = False
-    
+
     def clean(self):
         cleaned_data = super().clean()
         descuento_porcentaje = cleaned_data.get('descuento_porcentaje')
         descuento_fijo = cleaned_data.get('descuento_fijo')
-        
+
         # Validar que al menos uno de los descuentos esté presente
         if not descuento_porcentaje and not descuento_fijo:
             raise forms.ValidationError('Debe especificar al menos un tipo de descuento.')
-        
+
         # Validar que no se especifiquen ambos tipos de descuento
         if descuento_porcentaje and descuento_fijo:
             raise forms.ValidationError('Solo puede especificar un tipo de descuento por vez.')
-        
+
         # Validar rangos
         if descuento_porcentaje is not None and (descuento_porcentaje < 0 or descuento_porcentaje > 100):
             raise forms.ValidationError('El descuento porcentual debe estar entre 0 y 100.')
-        
+
         if descuento_fijo is not None and descuento_fijo < 0:
             raise forms.ValidationError('El descuento fijo no puede ser negativo.')
-        
+
         return cleaned_data
 
 class ConfiguracionFarmaciaForm(forms.ModelForm):
@@ -310,7 +327,7 @@ class ConfiguracionFarmaciaForm(forms.ModelForm):
     class Meta:
         model = Farmacia
         fields = [
-            'nombre', 'matricula', 'cuit', 'telefono', 
+            'nombre', 'matricula', 'cuit', 'telefono',
             'email_contacto', 'horario_apertura', 'horario_cierre'
         ]
         widgets = {
@@ -355,7 +372,7 @@ class ConfiguracionFarmaciaForm(forms.ModelForm):
             'horario_apertura': 'Horario de Apertura',
             'horario_cierre': 'Horario de Cierre',
         }
-    
+
     def clean_cuit(self):
         cuit = self.cleaned_data.get('cuit')
         if cuit:
@@ -364,7 +381,7 @@ class ConfiguracionFarmaciaForm(forms.ModelForm):
             if len(cuit_clean) != 11:
                 raise forms.ValidationError('El CUIT debe tener 11 dígitos.')
         return cuit
-    
+
     def clean_matricula(self):
         matricula = self.cleaned_data.get('matricula')
         if matricula:
@@ -405,18 +422,18 @@ class ConfiguracionDireccionFarmaciaForm(forms.ModelForm):
                 'id': 'direccion-codigo-postal-farmacia'
             }),
         }
-    
+
     def clean(self):
         cleaned_data = super().clean()
         calle = cleaned_data.get('calle')
         numero = cleaned_data.get('numero')
         ciudad = cleaned_data.get('ciudad')
         provincia = cleaned_data.get('provincia')
-        
+
         # Validación básica
         if not all([calle, numero, ciudad, provincia]):
             raise forms.ValidationError('Todos los campos de dirección son obligatorios.')
-        
+
         return cleaned_data
 
 class ProductoForm(forms.ModelForm):
@@ -425,7 +442,7 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         fields = [
             'nombre', 'descripcion', 'precio_base', 'codigo_barras',
-            'categoria', 'laboratorio', 'requiere_receta', 'stock_disponible'
+            'categoria', 'laboratorio', 'requiere_receta', 'stock_disponible', 'imagen' # <-- AÑADIDO 'imagen'
         ]
         widgets = {
             'nombre': forms.TextInput(attrs={
@@ -472,34 +489,40 @@ class ProductoForm(forms.ModelForm):
                 'placeholder': '0',
                 'id': 'producto-stock'
             }),
+             # Widget para el campo de imagen
+            'imagen': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'id': 'producto-imagen'
+            })
         }
         labels = {
             'precio_base': 'Precio Base ($)',
             'codigo_barras': 'Código de Barras',
             'requiere_receta': 'Requiere Receta Médica',
             'stock_disponible': 'Stock Disponible',
+            'imagen': 'Imagen del Producto' # <-- AÑADIDO label
         }
-    
+
     def __init__(self, *args, **kwargs):
         farmacia = kwargs.pop('farmacia', None)
         super().__init__(*args, **kwargs)
-        
+
         if farmacia:
             self.instance.farmacia = farmacia
-    
+
     def clean_precio_base(self):
         precio = self.cleaned_data.get('precio_base')
         if precio is not None and precio <= 0:
             raise forms.ValidationError('El precio debe ser mayor a 0.')
         return precio
-    
+
     def clean_stock_disponible(self):
         stock = self.cleaned_data.get('stock_disponible')
         if stock is not None and stock < 0:
             raise forms.ValidationError('El stock no puede ser negativo.')
         return stock
 
-# --- TUS FORMULARIOS DE REGISTRO (ADAPTADOS) ---
+# --- TUS FORMULARIOS DE REGISTRO (ARREGLADOS) ---
 
 class ClienteSignUpForm(UserCreationForm):
     dni = forms.CharField(max_length=8, required=True, label="DNI")
@@ -518,7 +541,7 @@ class ClienteSignUpForm(UserCreationForm):
     # Campos adaptados para el modelo Direccion
     calle = forms.CharField(max_length=100, required=True)
     numero = forms.CharField(max_length=10, required=True)
-    entre_calles = forms.CharField(max_length=255, required=False)
+    # ELIMINADO: entre_calles = forms.CharField(max_length=255, required=False)
     ciudad = forms.CharField(max_length=50, required=True, initial="Buenos Aires")
     provincia = forms.CharField(max_length=50, required=True, initial="Buenos Aires")
     codigo_postal = forms.CharField(max_length=10, required=True)
@@ -527,12 +550,38 @@ class ClienteSignUpForm(UserCreationForm):
         model = User
         fields = ('first_name', 'last_name', 'email')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Aplicar clases Bootstrap consistentes
+        bootstrap_text_inputs = [
+            'dni', 'first_name', 'last_name', 'email', 'calle', 'numero',
+            'ciudad', 'provincia', 'codigo_postal', 'numero_afiliado'
+        ]
+        for name in bootstrap_text_inputs:
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        if 'obra_social' in self.fields:
+            self.fields['obra_social'].widget.attrs.setdefault('class', 'form-select')
+        # Passwords
+        for name in ['password1', 'password2']:
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        if 'password1' in self.fields:
+            self.fields['password1'].help_text = mark_safe(
+                '<ul>'
+                '<li>Tu contraseña no debe ser demasiado similar a tu información personal.</li>'
+                '<li>Tu contraseña debe contener al menos 8 caracteres.</li>'
+                '<li>Tu contraseña no puede ser una contraseña de uso común.</li>'
+                '<li>Tu contraseña no puede ser completamente numérica.</li>'
+                '</ul>'
+            )
+
     def clean_dni(self):
         dni = self.cleaned_data.get('dni')
         if Cliente.objects.filter(dni=dni).exists():
             raise forms.ValidationError("Ya existe un cliente registrado con este DNI.")
         if User.objects.filter(username=dni).exists():
-             raise forms.ValidationError("Este DNI ya está asociado a otra cuenta.")
+            raise forms.ValidationError("Este DNI ya está asociado a otra cuenta.")
         return dni
 
     @transaction.atomic
@@ -541,11 +590,11 @@ class ClienteSignUpForm(UserCreationForm):
         user.username = self.cleaned_data['dni'] # Usamos DNI como username
         if commit:
             user.save()
-            # Guardamos el modelo Direccion
+            # Guardamos el modelo Direccion SIN entre_calles
             direccion = Direccion.objects.create(
                 calle=self.cleaned_data.get('calle'),
                 numero=self.cleaned_data.get('numero'),
-                entre_calles=self.cleaned_data.get('entre_calles'),
+                # ELIMINADO: entre_calles=self.cleaned_data.get('entre_calles'),
                 ciudad=self.cleaned_data.get('ciudad'),
                 provincia=self.cleaned_data.get('provincia'),
                 codigo_postal=self.cleaned_data.get('codigo_postal'),
@@ -571,7 +620,7 @@ class FarmaciaSignUpForm(UserCreationForm):
     # Campos adaptados para el modelo Direccion
     calle = forms.CharField(max_length=100, required=True)
     numero = forms.CharField(max_length=10, required=True)
-    entre_calles = forms.CharField(max_length=255, required=False)
+    # ELIMINADO: entre_calles = forms.CharField(max_length=255, required=False)
     ciudad = forms.CharField(max_length=50, required=True, initial="Buenos Aires")
     provincia = forms.CharField(max_length=50, required=True, initial="Buenos Aires")
     codigo_postal = forms.CharField(max_length=10, required=True)
@@ -580,16 +629,40 @@ class FarmaciaSignUpForm(UserCreationForm):
         model = User
         fields = ('email',) # 'username' se autocompleta con DNI
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        bootstrap_text_inputs = [
+            'dni', 'nombre_farmacia', 'cuit', 'matricula', 'telefono',
+            'email_contacto', 'calle', 'numero', 'ciudad', 'provincia',
+            'codigo_postal', 'email'
+        ]
+        for name in bootstrap_text_inputs:
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        for name in ['password1', 'password2']:
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        if 'password1' in self.fields:
+            self.fields['password1'].help_text = mark_safe(
+                '<ul>'
+                '<li>Tu contraseña no debe ser demasiado similar a tu información personal.</li>'
+                '<li>Tu contraseña debe contener al menos 8 caracteres.</li>'
+                '<li>Tu contraseña no puede ser una contraseña de uso común.</li>'
+                '<li>Tu contraseña no puede ser completamente numérica.</li>'
+                '</ul>'
+            )
+
     @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
         user.username = self.cleaned_data['dni'] # Usamos DNI como username
         if commit:
             user.save()
+            # Guardamos el modelo Direccion SIN entre_calles
             direccion = Direccion.objects.create(
                 calle=self.cleaned_data.get('calle'),
                 numero=self.cleaned_data.get('numero'),
-                entre_calles=self.cleaned_data.get('entre_calles'),
+                # ELIMINADO: entre_calles=self.cleaned_data.get('entre_calles'),
                 ciudad=self.cleaned_data.get('ciudad'),
                 provincia=self.cleaned_data.get('provincia'),
                 codigo_postal=self.cleaned_data.get('codigo_postal'),
@@ -621,7 +694,7 @@ class RepartidorSignUpForm(UserCreationForm):
     # Adaptado a Direccion
     calle = forms.CharField(max_length=100, required=True)
     numero = forms.CharField(max_length=10, required=True)
-    entre_calles = forms.CharField(max_length=255, required=False)
+    # ELIMINADO: entre_calles = forms.CharField(max_length=255, required=False)
     ciudad = forms.CharField(max_length=50, required=True, initial="Buenos Aires")
     provincia = forms.CharField(max_length=50, required=True, initial="Buenos Aires")
     codigo_postal = forms.CharField(max_length=10, required=True)
@@ -629,6 +702,32 @@ class RepartidorSignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ('first_name', 'last_name', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        bootstrap_text_inputs = [
+            'dni', 'first_name', 'last_name', 'telefono', 'patente', 'email',
+            'calle', 'numero', 'ciudad', 'provincia', 'codigo_postal'
+        ]
+        for name in bootstrap_text_inputs:
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        if 'tipo_vehiculo' in self.fields:
+            self.fields['tipo_vehiculo'].widget.attrs.setdefault('class', 'form-select')
+        if 'cedula_vehiculo' in self.fields:
+            self.fields['cedula_vehiculo'].widget.attrs.setdefault('class', 'form-control')
+        for name in ['password1', 'password2']:
+            if name in self.fields:
+                self.fields[name].widget.attrs.setdefault('class', 'form-control')
+        if 'password1' in self.fields:
+            self.fields['password1'].help_text = mark_safe(
+                '<ul>'
+                '<li>Tu contraseña no debe ser demasiado similar a tu información personal.</li>'
+                '<li>Tu contraseña debe contener al menos 8 caracteres.</li>'
+                '<li>Tu contraseña no puede ser una contraseña de uso común.</li>'
+                '<li>Tu contraseña no puede ser completamente numérica.</li>'
+                '</ul>'
+            )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -639,11 +738,12 @@ class RepartidorSignUpForm(UserCreationForm):
         if tipo_vehiculo == 'MOTO':
             if not patente:
                 self.add_error('patente', 'La patente es obligatoria si el vehículo es una motocicleta.')
-            if not cedula:
-                self.add_error('cedula_vehiculo', 'La foto de la cédula es obligatoria si el vehículo es una motocicleta.')
+            # Permitimos que la cédula sea opcional, la validación ya está en el modelo
+            # if not cedula:
+            #     self.add_error('cedula_vehiculo', 'La foto de la cédula es obligatoria si el vehículo es una motocicleta.')
         elif tipo_vehiculo == 'BICI':
-             cleaned_data['patente'] = None
-             cleaned_data['cedula_vehiculo'] = None
+                cleaned_data['patente'] = None
+                cleaned_data['cedula_vehiculo'] = None
         return cleaned_data
 
     @transaction.atomic
@@ -652,10 +752,11 @@ class RepartidorSignUpForm(UserCreationForm):
         user.username = self.cleaned_data['dni'] # DNI como username
         if commit:
             user.save()
+            # Guardamos el modelo Direccion SIN entre_calles
             direccion = Direccion.objects.create(
                 calle=self.cleaned_data.get('calle'),
                 numero=self.cleaned_data.get('numero'),
-                entre_calles=self.cleaned_data.get('entre_calles'),
+                # ELIMINADO: entre_calles=self.cleaned_data.get('entre_calles'),
                 ciudad=self.cleaned_data.get('ciudad'),
                 provincia=self.cleaned_data.get('provincia'),
                 codigo_postal=self.cleaned_data.get('codigo_postal'),
