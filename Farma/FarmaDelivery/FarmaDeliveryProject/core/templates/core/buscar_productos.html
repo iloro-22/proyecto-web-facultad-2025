@@ -34,22 +34,11 @@
                     
                     <div class="mb-3">
                         <label for="categoria" class="form-label">Categoría</label>
-                        <select class="form-select" id="categoria" name="categoria">
-                            <option value="" {% if not form.categoria.value %}selected{% endif %}>Todas las categorías</option>
-                            <option value="con_receta" {% if form.categoria.value == 'con_receta' %}selected{% endif %}>Con Receta</option>
-                            <option value="venta_libre" {% if form.categoria.value == 'venta_libre' %}selected{% endif %}>Venta Libre</option>
-                        </select>
+                        {{ form.categoria }}
                     </div>
                     <div class="mb-3">
                         <label for="farmacia" class="form-label">Farmacia</label>
-                        <select class="form-control" name="farmacia">
-                            <option value="">Todas las farmacias</option>
-                            {% for farmacia in form.farmacia.field.queryset %}
-                            <option value="{{ farmacia.id }}" {% if form.farmacia.value == farmacia.id %}selected{% endif %}>
-                                {{ farmacia.nombre }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        {{ form.farmacia }}
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100">
@@ -67,13 +56,13 @@
                 {% if total_resultados %}
                 <span class="badge bg-primary">{{ total_resultados }} productos</span>
                 {% endif %}
-                {% if filtro_distancia %}
+                {% if aplico_cercania %}
                 <span class="badge bg-success">Cercanos (hasta 2km)</span>
                 {% endif %}
             </h2>
         </div>
         
-        {% if not filtro_distancia %}
+        {% if not tiene_direccion %}
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i>
             <strong>Tip:</strong> Completa tu dirección en tu perfil para ver solo farmacias cercanas (hasta 2km).
