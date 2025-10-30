@@ -227,6 +227,35 @@ class Repartidor(models.Model):
         pedidos_cercanos.sort(key=lambda x: x['distancia'])
         return pedidos_cercanos
     
+    def pedidos_cercanos_filtrado(self, radio_km=2):
+        from .models import PedidoRechazado, Direccion, EstadoPedido, Pedido
+        rechazados_ids = PedidoRechazado.objects.filter(repartidor=self).values_list('pedido_id', flat=True)
+        # Ubicación (igual que pedidos_cercanos)
+        if self.ubicacion_fija and self.latitud_fija and self.longitud_fija:
+            lat = self.latitud_fija
+            lon = self.longitud_fija
+        elif self.latitud_actual and self.longitud_actual:
+            lat = self.latitud_actual
+            lon = self.longitud_actual
+        else:
+            return []
+        ubicacion_actual = Direccion(latitud=lat, longitud=lon)
+        pedidos_cercanos = []
+        pedidos_disponibles = Pedido.objects.filter(
+            estado=EstadoPedido.LISTO,
+            repartidor__isnull=True
+        ).exclude(id__in=rechazados_ids)
+        for pedido in pedidos_disponibles:
+            if pedido.direccion_entrega.latitud and pedido.direccion_entrega.longitud:
+                distancia = ubicacion_actual.calcular_distancia(pedido.direccion_entrega)
+                if distancia is not None and distancia <= radio_km:
+                    pedidos_cercanos.append({
+                        'pedido': pedido,
+                        'distancia': round(distancia, 2)
+                    })
+        pedidos_cercanos.sort(key=lambda x: x['distancia'])
+        return pedidos_cercanos
+    
     def esta_disponible(self):
         """Verifica si el repartidor está disponible (ubicación actualizada en los últimos 10 minutos)"""
         if not self.ultima_actualizacion_ubicacion:
@@ -386,3 +415,16 @@ class RecetaMedica(models.Model):
         if self.archivo_receta:
             return self.archivo_receta.name.split('.')[-1].lower()
         return None
+
+class PedidoRechazado(models.Model):
+    pedido = models.ForeignKey('Pedido', on_delete=models.CASCADE, related_name='rechazos')
+    repartidor = models.ForeignKey('Repartidor', on_delete=models.CASCADE, related_name='rechazos')
+    fecha_rechazo = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('pedido', 'repartidor')
+        verbose_name = 'Pedido Rechazado'
+        verbose_name_plural = 'Pedidos Rechazados'
+
+    def __str__(self):
+        return f"Pedido #{self.pedido.numero_pedido} rechazado por {self.repartidor.user.get_full_name()}"

@@ -712,7 +712,7 @@
                 debounceTimer = setTimeout(() => {
                     console.log('Realizando búsqueda para:', term); // Debug log
                     
-                    const url = `{% url 'autocomplete_productos' %}?term=${encodeURIComponent(term)}`;
+                    const url = `/autocomplete-disabled?term=${encodeURIComponent(term)}`;
                     console.log('URL de búsqueda:', url); // Debug log
                     
                     // Llama a la URL de autocompletado que creaste

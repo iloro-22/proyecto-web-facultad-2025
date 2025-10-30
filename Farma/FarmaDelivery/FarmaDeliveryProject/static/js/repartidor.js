@@ -351,17 +351,27 @@ function aceptarPedido(pedidoId) {
 function rechazarPedido(pedidoId) {
     const pedido = pedidosDisponibles.find(p => p.id === pedidoId);
     if (!pedido) return;
-    
-    // Remover de disponibles
-    pedidosDisponibles = pedidosDisponibles.filter(p => p.id !== pedidoId);
-    
-    // Actualizar vista
-    renderPedidosDisponibles();
-    
-    // Cerrar modal
-    document.getElementById('pedido-modal').classList.remove('show');
-    
-    showToast('info', 'Pedido Rechazado', `Pedido #${pedido.numero} rechazado`);
+    fetch(`/repartidor/rechazar/${pedidoId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            pedidosDisponibles = pedidosDisponibles.filter(p => p.id !== pedidoId);
+            renderPedidosDisponibles();
+            document.getElementById('pedido-modal').classList.remove('show');
+            showToast('info', 'Pedido Rechazado', `Pedido #${pedido.numero} rechazado`);
+        } else {
+            showToast('error', 'Error', data.mensaje || 'No se pudo rechazar el pedido');
+        }
+    })
+    .catch(error => {
+        showToast('error', 'Error', 'No se pudo rechazar el pedido');
+    });
 }
 
 function confirmarEntrega(pedidoId) {
