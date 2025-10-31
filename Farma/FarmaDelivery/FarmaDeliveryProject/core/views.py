@@ -676,9 +676,11 @@ def panel_farmacia(request):
         farmacia=farmacia,
         estado=EstadoPedido.PREPARANDO
     ).order_by('fecha_creacion')
+    # Include both LISTO (waiting for driver) and EN_CAMINO (driver on the way)
+    # so pharmacy can track orders until they're delivered
     pedidos_listos = Pedido.objects.filter(
         farmacia=farmacia,
-        estado=EstadoPedido.LISTO
+        estado__in=[EstadoPedido.LISTO, EstadoPedido.EN_CAMINO]
     ).order_by('fecha_creacion')
 
     # Obtener productos del inventario (TODOS los de la farmacia, activos o no)
