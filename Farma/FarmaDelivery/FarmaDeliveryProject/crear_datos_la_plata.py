@@ -291,8 +291,123 @@ def crear_productos_para_farmacias(farmacias):
         }
     ]
     
+    # Medicamentos con receta exclusivos para Farmacia Central
+    medicamentos_receta_central = [
+        {
+            'nombre': 'Atorvastatina 20mg',
+            'descripcion': 'Estatina para reducir el colesterol',
+            'precio_base': 450.00,
+            'categoria': 'Cardiovasculares',
+            'laboratorio': 'Pfizer',
+            'requiere_receta': True,
+            'stock_disponible': 30
+        },
+        {
+            'nombre': 'Enalapril 10mg',
+            'descripcion': 'Inhibidor ECA para hipertensión',
+            'precio_base': 320.00,
+            'categoria': 'Cardiovasculares',
+            'laboratorio': 'Merck',
+            'requiere_receta': True,
+            'stock_disponible': 25
+        },
+        {
+            'nombre': 'Levotiroxina 100mcg',
+            'descripcion': 'Hormona tiroidea sintética',
+            'precio_base': 380.00,
+            'categoria': 'Endocrinología',
+            'laboratorio': 'Abbott',
+            'requiere_receta': True,
+            'stock_disponible': 20
+        },
+        {
+            'nombre': 'Clonazepam 2mg',
+            'descripcion': 'Ansiolítico y anticonvulsivante',
+            'precio_base': 420.00,
+            'categoria': 'Psicotrópicos',
+            'laboratorio': 'Roche',
+            'requiere_receta': True,
+            'stock_disponible': 18
+        },
+        {
+            'nombre': 'Sertralina 50mg',
+            'descripcion': 'Antidepresivo ISRS',
+            'precio_base': 520.00,
+            'categoria': 'Psicotrópicos',
+            'laboratorio': 'Pfizer',
+            'requiere_receta': True,
+            'stock_disponible': 22
+        },
+        {
+            'nombre': 'Tramadol 50mg',
+            'descripcion': 'Analgésico opioide',
+            'precio_base': 480.00,
+            'categoria': 'Analgésicos',
+            'laboratorio': 'Grünenthal',
+            'requiere_receta': True,
+            'stock_disponible': 15
+        },
+        {
+            'nombre': 'Alprazolam 0.5mg',
+            'descripcion': 'Ansiolítico benzodiazepínico',
+            'precio_base': 390.00,
+            'categoria': 'Psicotrópicos',
+            'laboratorio': 'Pfizer',
+            'requiere_receta': True,
+            'stock_disponible': 20
+        },
+        {
+            'nombre': 'Prednisona 20mg',
+            'descripcion': 'Corticosteroide antiinflamatorio',
+            'precio_base': 350.00,
+            'categoria': 'Corticosteroides',
+            'laboratorio': 'Merck',
+            'requiere_receta': True,
+            'stock_disponible': 28
+        },
+        {
+            'nombre': 'Salbutamol 100mcg Inhalador',
+            'descripcion': 'Broncodilatador para asma',
+            'precio_base': 550.00,
+            'categoria': 'Respiratorios',
+            'laboratorio': 'GSK',
+            'requiere_receta': True,
+            'stock_disponible': 24
+        },
+        {
+            'nombre': 'Insulina Glargina 100UI/ml',
+            'descripcion': 'Insulina de acción prolongada',
+            'precio_base': 1200.00,
+            'categoria': 'Antidiabéticos',
+            'laboratorio': 'Sanofi',
+            'requiere_receta': True,
+            'stock_disponible': 12
+        },
+        {
+            'nombre': 'Warfarina 5mg',
+            'descripcion': 'Anticoagulante oral',
+            'precio_base': 420.00,
+            'categoria': 'Cardiovasculares',
+            'laboratorio': 'Bristol-Myers',
+            'requiere_receta': True,
+            'stock_disponible': 16
+        },
+        {
+            'nombre': 'Carbamazepina 200mg',
+            'descripcion': 'Antiepiléptico',
+            'precio_base': 380.00,
+            'categoria': 'Neurología',
+            'laboratorio': 'Novartis',
+            'requiere_receta': True,
+            'stock_disponible': 18
+        }
+    ]
+    
     for i, farmacia in enumerate(farmacias, 1):
         print(f"📦 Agregando productos a {farmacia.nombre}...")
+        productos_contador = 0
+        
+        # Agregar productos base a todas las farmacias
         for j, producto_data in enumerate(productos_base):
             # Variar precios ligeramente entre farmacias
             precio_variado = producto_data['precio_base'] + (hash(farmacia.nombre) % 50 - 25)
@@ -312,7 +427,30 @@ def crear_productos_para_farmacias(farmacias):
                 requiere_receta=producto_data['requiere_receta'],
                 stock_disponible=max(stock_variado, 5)  # Stock mínimo 5
             )
-        print(f"✅ {len(productos_base)} productos agregados a {farmacia.nombre}")
+            productos_contador += 1
+        
+        # Agregar medicamentos con receta SOLO a Farmacia Central
+        if farmacia.nombre == 'Farmacia Central':
+            print(f"   💊 Agregando medicamentos con receta exclusivos a {farmacia.nombre}...")
+            for k, medicamento_data in enumerate(medicamentos_receta_central):
+                # Crear código de barras único para medicamentos con receta
+                codigo_barras_receta = f"RX{i:03d}{k:04d}"
+                
+                Producto.objects.create(
+                    farmacia=farmacia,
+                    nombre=medicamento_data['nombre'],
+                    descripcion=medicamento_data['descripcion'],
+                    precio_base=medicamento_data['precio_base'],
+                    codigo_barras=codigo_barras_receta,
+                    categoria=medicamento_data['categoria'],
+                    laboratorio=medicamento_data['laboratorio'],
+                    requiere_receta=True,  # TODOS requieren receta
+                    stock_disponible=medicamento_data['stock_disponible']
+                )
+                productos_contador += 1
+            print(f"   ✅ {len(medicamentos_receta_central)} medicamentos con receta agregados")
+        
+        print(f"✅ {productos_contador} productos totales agregados a {farmacia.nombre}")
 
 def crear_cliente(direcciones):
     """Crear cliente en 1 entre 49 y 50"""

@@ -185,11 +185,22 @@
                     </div>
                     <div class="pedidos-grid" id="pedidos-listos">
                         {% for pedido in pedidos_listos %}
-                        <div class="pedido-card" data-pedido-id="{{ pedido.id }}">
+                        <div class="pedido-card {% if pedido.estado == 'EN_CAMINO' %}en-camino{% endif %}" data-pedido-id="{{ pedido.id }}">
                             <div class="card-header">
                                 <div class="pedido-info">
                                     <h3 class="pedido-numero">#{{ pedido.numero_pedido }}</h3>
                                     <p class="cliente-nombre">{{ pedido.cliente.user.get_full_name }}</p>
+                                    {% if pedido.estado == 'EN_CAMINO' %}
+                                    <span class="estado-badge en-camino">
+                                        <i class="fas fa-shipping-fast"></i>
+                                        En camino con repartidor
+                                    </span>
+                                    {% elif pedido.estado == 'LISTO' %}
+                                    <span class="estado-badge listo">
+                                        <i class="fas fa-check-circle"></i>
+                                        Esperando repartidor
+                                    </span>
+                                    {% endif %}
                                 </div>
                                 <div class="pedido-time">
                                     <i class="fas fa-clock"></i>
@@ -206,6 +217,12 @@
                                         <i class="fas fa-dollar-sign"></i>
                                         <span>${{ pedido.total }}</span>
                                     </div>
+                                    {% if pedido.estado == 'EN_CAMINO' and pedido.repartidor %}
+                                    <div class="detail-item">
+                                        <i class="fas fa-motorcycle"></i>
+                                        <span>{{ pedido.repartidor.user.get_full_name }}</span>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <div class="card-actions">
                                     <button class="btn btn-primary btn-sm ver-detalle" data-pedido-id="{{ pedido.id }}">
