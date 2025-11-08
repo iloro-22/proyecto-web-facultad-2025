@@ -285,10 +285,25 @@ function initInventario() {
             const productoId = e.target.closest('.actualizar-stock').getAttribute('data-producto-id');
             const stockInput = document.querySelector(`input[data-producto-id="${productoId}"]`);
             const nuevoStock = parseInt(stockInput.value);
+            const stockAnterior = parseInt(stockInput.getAttribute('data-stock-anterior'));
+            
+            // Mostrar mensaje de error si el stock es negativo
+            const errorElement = document.getElementById(`stock-error-${productoId}`);
             
             if (isNaN(nuevoStock) || nuevoStock < 0) {
-                showToast('error', 'Error', 'El stock debe ser un número válido mayor o igual a 0');
+                if (errorElement) {
+                    errorElement.style.display = 'block';
+                }
+                // Restaurar el valor anterior
+                stockInput.value = stockAnterior;
                 return;
+            } else {
+                // Ocultar mensaje de error si el stock es válido
+                if (errorElement) {
+                    errorElement.style.display = 'none';
+                }
+                // Actualizar el valor anterior almacenado
+                stockInput.setAttribute('data-stock-anterior', nuevoStock);
             }
             
             actualizarStock(productoId, nuevoStock);

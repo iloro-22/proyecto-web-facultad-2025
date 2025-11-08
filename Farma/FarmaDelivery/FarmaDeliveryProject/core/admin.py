@@ -80,6 +80,17 @@ class FarmaciaAdmin(admin.ModelAdmin):
     ordering = ['nombre']
     readonly_fields = ['rol']
     filter_horizontal = ['obras_sociales_aceptadas']
+    actions = ['aprobar_farmacias', 'rechazar_farmacias']
+    
+    def aprobar_farmacias(self, request, queryset):
+        updated = queryset.update(activa=True)
+        self.message_user(request, f'{updated} farmacia(s) aprobada(s) exitosamente.')
+    aprobar_farmacias.short_description = 'Aprobar'
+    
+    def rechazar_farmacias(self, request, queryset):
+        updated = queryset.update(activa=False)
+        self.message_user(request, f'{updated} farmacia(s) rechazada(s).')
+    rechazar_farmacias.short_description = 'Rechazar'
 
 # Configuración del admin para Repartidor
 @admin.register(Repartidor)
@@ -89,6 +100,17 @@ class RepartidorAdmin(admin.ModelAdmin):
     search_fields = ['user__first_name', 'user__last_name', 'user__email', 'dni']
     ordering = ['user__last_name', 'user__first_name']
     readonly_fields = ['rol']
+    actions = ['aprobar_repartidores', 'rechazar_repartidores']
+    
+    def aprobar_repartidores(self, request, queryset):
+        updated = queryset.update(activo=True)
+        self.message_user(request, f'{updated} repartidor(es) aprobado(s) exitosamente.')
+    aprobar_repartidores.short_description = 'Aprobar'
+    
+    def rechazar_repartidores(self, request, queryset):
+        updated = queryset.update(activo=False)
+        self.message_user(request, f'{updated} repartidor(es) rechazado(s).')
+    rechazar_repartidores.short_description = 'Rechazar'
 
 # Configuración inline para mostrar descuentos de obra social en productos
 class DescuentoObraSocialInline(admin.TabularInline):

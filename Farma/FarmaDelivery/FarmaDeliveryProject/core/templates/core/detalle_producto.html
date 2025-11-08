@@ -8,7 +8,7 @@
             
             <div class="product-image" style="height: 300px; display: flex; align-items: center; justify-content: center; background-color: #f8f9fa;">
                 {% if producto.imagen %}
-                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" style="width: 100%; height: 300px; object-fit: cover;">
+                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                 {% else %}
                     <i class="fas fa-pills fa-5x text-secondary"></i>
                 {% endif %}
@@ -198,12 +198,48 @@
                 </div>
                 <hr>
                 
+                <!-- Tipo de Entrega -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-truck"></i> Tipo de Entrega</h5>
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Importante:</strong> Para retiro en farmacia solo se permite pago en efectivo.
+                            </small>
+                        </div>
+                        {% for value, label in confirmacion_form.tipo_entrega.field.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input tipo-entrega-radio" type="radio" name="tipo_entrega" 
+                                   id="tipo_entrega_{{ value }}" value="{{ value }}" 
+                                   {% if confirmacion_form.tipo_entrega.value == value or forloop.first %}checked{% endif %}>
+                            <label class="form-check-label" for="tipo_entrega_{{ value }}">
+                                <strong>{{ label }}</strong>
+                                {% if value == 'RETIRO' %}
+                                <span class="text-muted"> - Solo efectivo</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <hr>
+                
                 <div class="row">
                     <div class="col-md-6">
                         <h5><i class="fas fa-credit-card"></i> Método de Pago</h5>
                         <div class="mb-3">
                             <label for="{{ confirmacion_form.metodo_pago.id_for_label }}" class="form-label">Selecciona método de pago</label>
                             {{ confirmacion_form.metodo_pago }}
+                        </div>
+                        
+                        <!-- Campo de comprobante de transferencia (oculto inicialmente) -->
+                        <div class="mb-3" id="comprobante-container" style="display: none;">
+                            <label for="{{ confirmacion_form.comprobante_transferencia.id_for_label }}" class="form-label">
+                                Comprobante de Transferencia <span class="text-danger">*</span>
+                            </label>
+                            {{ confirmacion_form.comprobante_transferencia }}
+                            <div class="form-text">Sube el comprobante de tu transferencia bancaria (imagen o PDF)</div>
                         </div>
                     </div>
                     
@@ -296,4 +332,62 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Mostrar/ocultar campo de comprobante según método de pago y tipo de entrega
+document.addEventListener('DOMContentLoaded', function() {
+    const metodoPagoSelect = document.getElementById('metodo-pago');
+    const comprobanteContainer = document.getElementById('comprobante-container');
+    const comprobanteInput = document.getElementById('comprobante-transferencia');
+    const tipoEntregaRadios = document.querySelectorAll('.tipo-entrega-radio');
+    
+    function actualizarMetodoPago() {
+        const tipoEntregaSeleccionado = document.querySelector('.tipo-entrega-radio:checked').value;
+        const metodoPagoActual = metodoPagoSelect.value;
+        
+        // Si es retiro en farmacia, solo permitir efectivo
+        if (tipoEntregaSeleccionado === 'RETIRO') {
+            // Cambiar las opciones del select para solo mostrar efectivo
+            metodoPagoSelect.innerHTML = '<option value="EFECTIVO">Efectivo</option>';
+            metodoPagoSelect.value = 'EFECTIVO';
+            comprobanteContainer.style.display = 'none';
+            comprobanteInput.required = false;
+        } else {
+            // Restaurar opciones de pago para envío a domicilio
+            metodoPagoSelect.innerHTML = `
+                <option value="">Selecciona método de pago</option>
+                <option value="EFECTIVO">Efectivo</option>
+                <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+            `;
+            metodoPagoSelect.value = metodoPagoActual;
+        }
+        actualizarComprobante();
+    }
+    
+    function actualizarComprobante() {
+        if (metodoPagoSelect.value === 'TRANSFERENCIA') {
+            comprobanteContainer.style.display = 'block';
+            comprobanteInput.required = true;
+        } else {
+            comprobanteContainer.style.display = 'none';
+            comprobanteInput.required = false;
+            comprobanteInput.value = '';
+        }
+    }
+    
+    if (metodoPagoSelect) {
+        metodoPagoSelect.addEventListener('change', actualizarComprobante);
+    }
+    
+    if (tipoEntregaRadios) {
+        tipoEntregaRadios.forEach(radio => {
+            radio.addEventListener('change', actualizarMetodoPago);
+        });
+        // Ejecutar al cargar la página
+        actualizarMetodoPago();
+    }
+});
+</script>
 {% endblock %}

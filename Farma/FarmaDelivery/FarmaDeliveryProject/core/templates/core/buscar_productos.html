@@ -41,6 +41,17 @@
                         {{ form.farmacia }}
                     </div>
                     
+                    {% if obra_social_cliente %}
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.filtrar_obra_social }}
+                            <label class="form-check-label" for="filtrar-obra-social">
+                                Filtrar por mi obra social ({{ obra_social_cliente.nombre }})
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-search"></i> Aplicar Filtros
                     </button>

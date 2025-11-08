@@ -150,6 +150,8 @@ class Repartidor(models.Model):
         ]
     )
     telefono = models.CharField(max_length=20)
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+    edad = models.PositiveIntegerField(null=True, blank=True, help_text="Edad del repartidor")
     # ... dentro de class Repartidor(models.Model):
 
     # Tus campos para el vehículo
@@ -342,6 +344,11 @@ class MetodoPago(models.TextChoices):
     TRANSFERENCIA = 'TRANSFERENCIA', 'Transferencia Bancaria'
     MERCADO_PAGO = 'MERCADO_PAGO', 'Mercado Pago'
 
+# Enumerativo para tipo de entrega
+class TipoEntrega(models.TextChoices):
+    DOMICILIO = 'DOMICILIO', 'Envío a domicilio'
+    RETIRO = 'RETIRO', 'Retiro en farmacia'
+
 # Modelo Pedido
 class Pedido(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='pedidos')
@@ -350,6 +357,8 @@ class Pedido(models.Model):
     numero_pedido = models.CharField(max_length=20, unique=True)
     estado = models.CharField(max_length=20, choices=EstadoPedido.choices, default=EstadoPedido.PENDIENTE)
     metodo_pago = models.CharField(max_length=20, choices=MetodoPago.choices)
+    tipo_entrega = models.CharField(max_length=20, choices=TipoEntrega.choices, default=TipoEntrega.DOMICILIO, verbose_name="Tipo de Entrega")
+    comprobante_transferencia = models.FileField(upload_to='comprobantes/', blank=True, null=True, verbose_name="Comprobante de Transferencia")
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     descuento_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2)

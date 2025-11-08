@@ -19,7 +19,7 @@ from .models import (
     Cliente, Farmacia, Repartidor, Producto, Pedido, 
     DetallePedido, Direccion, ObraSocial, MetodoPago,
     EstadoPedido, DescuentoObraSocial, RecetaMedica,
-    PedidoRechazado, # <--- asegurarse de importar el modelo
+    PedidoRechazado, TipoEntrega
 )
 from .forms import (
     BusquedaProductoForm, RecetaForm, ConfirmacionPedidoForm,
@@ -91,17 +91,20 @@ def buscar_productos(request):
     form = BusquedaProductoForm(request.GET)
     productos = Producto.objects.filter(activo=True)
     
-    # Obtener cliente actual para filtrar por distancia
+    # Obtener cliente actual para filtrar por distancia y obra social
     try:
         cliente = Cliente.objects.get(user=request.user)
         direccion_cliente = cliente.direccion
+        obra_social_cliente = cliente.obra_social
     except Cliente.DoesNotExist:
         direccion_cliente = None
+        obra_social_cliente = None
     
     if form.is_valid():
         busqueda = form.cleaned_data.get('busqueda')
         categoria = form.cleaned_data.get('categoria')
         farmacia = form.cleaned_data.get('farmacia')
+        filtrar_obra_social = form.cleaned_data.get('filtrar_obra_social')
         
         if busqueda:
             productos = productos.filter(nombre__icontains=busqueda)
@@ -116,6 +119,14 @@ def buscar_productos(request):
             
         if farmacia:
             productos = productos.filter(farmacia=farmacia)
+        
+        # Aplicar filtro de obra social solo si el usuario marcó la casilla
+        if filtrar_obra_social and obra_social_cliente:
+            farmacias_con_obra_social = Farmacia.objects.filter(
+                obras_sociales_aceptadas=obra_social_cliente,
+                activa=True
+            ).values_list('id', flat=True)
+            productos = productos.filter(farmacia_id__in=farmacias_con_obra_social)
     
     # Intentar completar coordenadas faltantes de la dirección del cliente
     if direccion_cliente and (not direccion_cliente.latitud or not direccion_cliente.longitud):
@@ -134,12 +145,14 @@ def buscar_productos(request):
                 direccion_cliente.save()
         except Exception:
             pass
-
+    
     # Filtrar productos por farmacias cercanas (2km) si el cliente tiene dirección
     productos_cercanos = []
     if direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud:
         farmacias_cercanas = Farmacia.farmacias_cercanas(direccion_cliente, radio_km=2)
         farmacias_ids = [f['farmacia'].id for f in farmacias_cercanas]
+        
+        # Aplicar filtro de cercanía
         productos = productos.filter(farmacia_id__in=farmacias_ids)
         
         # Agregar información de distancia a cada producto
@@ -150,7 +163,7 @@ def buscar_productos(request):
                 'distancia': round(distancia, 2) if distancia else None
             })
     else:
-        # Si no hay dirección del cliente, mostrar todos los productos
+        # Si no hay dirección del cliente, mostrar todos los productos sin filtro de distancia
         productos_cercanos = [{'producto': p, 'distancia': None} for p in productos]
     
     # Paginación
@@ -165,6 +178,7 @@ def buscar_productos(request):
         'direccion_cliente': direccion_cliente,
         'aplico_cercania': bool(direccion_cliente and direccion_cliente.latitud and direccion_cliente.longitud),
         'tiene_direccion': bool(direccion_cliente),
+        'obra_social_cliente': obra_social_cliente,
     }
     return render(request, 'core/buscar_productos.html', context)
 
@@ -243,7 +257,7 @@ def procesar_compra(request, producto_id):
     # Procesar formularios
     receta_form = RecetaForm(request.POST, request.FILES, requiere_receta=producto.requiere_receta)
     direccion_form = DireccionForm(request.POST)
-    confirmacion_form = ConfirmacionPedidoForm(request.POST)
+    confirmacion_form = ConfirmacionPedidoForm(request.POST, request.FILES)
     
     if not (receta_form.is_valid() and direccion_form.is_valid() and confirmacion_form.is_valid()):
         messages.error(request, 'Por favor corrige los errores en el formulario.')
@@ -252,6 +266,20 @@ def procesar_compra(request, producto_id):
     # Validar que si el producto requiere receta, se haya subido un archivo
     if producto.requiere_receta and not receta_form.cleaned_data.get('archivo_receta'):
         messages.error(request, 'Este producto requiere receta médica. Por favor sube una foto o PDF de tu receta.')
+        return redirect('detalle_producto', producto_id=producto_id)
+    
+    # Validar comprobante de transferencia y tipo de entrega
+    metodo_pago = confirmacion_form.cleaned_data['metodo_pago']
+    tipo_entrega = confirmacion_form.cleaned_data.get('tipo_entrega', TipoEntrega.DOMICILIO)
+    comprobante_transferencia = confirmacion_form.cleaned_data.get('comprobante_transferencia')
+    
+    if metodo_pago == MetodoPago.TRANSFERENCIA and not comprobante_transferencia:
+        messages.error(request, 'Debes subir el comprobante de transferencia.')
+        return redirect('detalle_producto', producto_id=producto_id)
+    
+    # Validar que retiro en farmacia solo permite efectivo
+    if tipo_entrega == TipoEntrega.RETIRO and metodo_pago != MetodoPago.EFECTIVO:
+        messages.error(request, 'Para retiro en farmacia solo se permite pago en efectivo.')
         return redirect('detalle_producto', producto_id=producto_id)
     
     # Crear o obtener dirección
@@ -307,6 +335,8 @@ def procesar_compra(request, producto_id):
         numero_pedido=numero_pedido,
         estado=EstadoPedido.PENDIENTE,
         metodo_pago=confirmacion_form.cleaned_data['metodo_pago'],
+        tipo_entrega=tipo_entrega,
+        comprobante_transferencia=comprobante_transferencia if metodo_pago == MetodoPago.TRANSFERENCIA else None,
         subtotal=precio_base,
         descuento_total=descuento_aplicado,
         total=precio_final,
@@ -444,6 +474,13 @@ def panel_repartidor(request):
     except Repartidor.DoesNotExist:
         messages.error(request, 'No tienes permisos de repartidor.')
         return redirect('home')
+    
+    # Verificar si el repartidor está activo/aprobado
+    if not repartidor.activo:
+        return render(request, 'core/cuenta_pendiente.html', {
+            'tipo_cuenta': 'repartidor',
+            'mensaje': 'Tu cuenta de repartidor está en revisión. Podrás acceder cuando esté aprobada por un administrador.'
+        })
     
     # Obtener pedidos cercanos
     pedidos_cercanos = repartidor.pedidos_cercanos(radio_km=2)
@@ -666,6 +703,13 @@ def panel_farmacia(request):
     except Farmacia.DoesNotExist:
         messages.error(request, 'No tienes permisos de farmacia.')
         return redirect('home')
+    
+    # Verificar si la farmacia está activa/aprobada
+    if not farmacia.activa:
+        return render(request, 'core/cuenta_pendiente.html', {
+            'tipo_cuenta': 'farmacia',
+            'mensaje': 'Tu cuenta de farmacia está en revisión. Podrás acceder cuando esté aprobada por un administrador.'
+        })
 
     # Obtener pedidos de la farmacia
     pedidos_nuevos = Pedido.objects.filter(
@@ -683,7 +727,7 @@ def panel_farmacia(request):
         estado__in=[EstadoPedido.LISTO, EstadoPedido.EN_CAMINO]
     ).order_by('fecha_creacion')
 
-    # Obtener productos del inventario (TODOS los de la farmacia, activos o no)
+    # Obtener productos del inventario (TODOS los de la farmacia, activos o no) - Ordenados alfabéticamente
     productos = Producto.objects.filter(farmacia=farmacia).order_by('nombre')
     productos_sin_stock = productos.filter(stock_disponible=0)
     productos_poco_stock = productos.filter(stock_disponible__gt=0, stock_disponible__lte=5)
@@ -916,7 +960,7 @@ def actualizar_stock(request, producto_id):
         try:
             nuevo_stock = int(request.POST.get('stock'))
             if nuevo_stock < 0:
-                return JsonResponse({'error': 'El stock no puede ser negativo'}, status=400)
+                return JsonResponse({'error': 'El stock no puede ser negativo. Por favor ingresa un número mayor o igual a 0.'}, status=400)
             
             producto.stock_disponible = nuevo_stock
             producto.save()
@@ -927,7 +971,7 @@ def actualizar_stock(request, producto_id):
                 'nuevo_stock': nuevo_stock
             })
         except (ValueError, TypeError):
-            return JsonResponse({'error': 'Stock inválido'}, status=400)
+            return JsonResponse({'error': 'Stock inválido. Debe ser un número entero.'}, status=400)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 

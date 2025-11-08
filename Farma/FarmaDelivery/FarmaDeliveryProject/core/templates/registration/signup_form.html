@@ -212,10 +212,10 @@
                         {% if form.password1.errors %}<div class="errorlist">{{ form.password1.errors }}</div>{% endif %}
                         <div class="form-text">
                             <ul>
-                                <li>Mínimo 8 caracteres</li>
-                                <li>Al menos una letra mayúscula</li>
-                                <li>Al menos un número</li>
-                                <li>Al menos un carácter especial</li>
+                                <li>La contraseña no debe ser demasiado similar a tu información personal.</li>
+                                <li>La contraseña debe contener al menos 8 caracteres.</li>
+                                <li>La contraseña no puede ser una contraseña de uso común.</li>
+                                <li>La contraseña no puede ser completamente numérica.</li>
                             </ul>
                         </div>
                     </div>
@@ -326,7 +326,7 @@
             {% elif user_type == 'Repartidor' %}
                 <div class="row g-3 mb-3">
                      {% if form.telefono %}
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group text-start">
                             <label for="{{ form.telefono.id_for_label }}">Teléfono {% if form.telefono.field.required %}<span class="required">*</span>{% endif %}</label>
                             {{ form.telefono }}
@@ -334,8 +334,17 @@
                         </div>
                     </div>
                     {% endif %}
+                    {% if form.edad %}
+                    <div class="col-md-4">
+                        <div class="form-group text-start">
+                            <label for="{{ form.edad.id_for_label }}">{{ form.edad.label }} {% if form.edad.field.required %}<span class="required">*</span>{% endif %}</label>
+                            {{ form.edad }}
+                            {% if form.edad.errors %}<div class="errorlist">{{ form.edad.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                     {% if form.tipo_vehiculo %}
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group text-start">
                             <label for="{{ form.tipo_vehiculo.id_for_label }}">{{ form.tipo_vehiculo.label }} {% if form.tipo_vehiculo.field.required %}<span class="required">*</span>{% endif %}</label>
                             {{ form.tipo_vehiculo }}

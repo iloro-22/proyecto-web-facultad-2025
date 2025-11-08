@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 from .models import (
     Cliente, Farmacia, Repartidor, Producto, Pedido,
     DetallePedido, Direccion, ObraSocial, MetodoPago,
-    DescuentoObraSocial
+    DescuentoObraSocial, TipoEntrega
 )
 import re
 
@@ -43,16 +43,24 @@ class BusquedaProductoForm(forms.Form):
         }),
         required=False
     )
+    filtrar_obra_social = forms.BooleanField(
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-check-input',
+            'id': 'filtrar-obra-social'
+        }),
+        required=False,
+        label='Filtrar por mi obra social'
+    )
 
 class RecetaForm(forms.Form):
     """Formulario para subir receta médica"""
     archivo_receta = forms.FileField(
         widget=forms.FileInput(attrs={
             'class': 'form-control',
-            'accept': 'image/*,.pdf',
+            'accept': 'image/jpeg,image/jpg,image/png,image/gif,application/pdf',
             'id': 'archivo-receta'
         }),
-        help_text="Sube una foto o PDF de tu receta médica",
+        help_text="Sube una foto o PDF de tu receta médica (sólo imágenes y PDF)",
         required=False
     )
     observaciones_receta = forms.CharField(
@@ -75,9 +83,34 @@ class RecetaForm(forms.Form):
             self.fields['archivo_receta'].help_text = "Sube una foto o PDF de tu receta médica (obligatorio)"
         else:
             self.fields['archivo_receta'].help_text = "Sube una foto o PDF de tu receta médica (opcional)"
+    
+    def clean_archivo_receta(self):
+        archivo = self.cleaned_data.get('archivo_receta')
+        if archivo:
+            # Validar extensión del archivo
+            extensiones_validas = ['jpg', 'jpeg', 'png', 'gif', 'pdf']
+            extension = archivo.name.split('.')[-1].lower()
+            if extension not in extensiones_validas:
+                raise forms.ValidationError(
+                    f'Tipo de archivo no permitido. Solo se aceptan imágenes (JPG, PNG, GIF) y PDF. '
+                    f'Archivo recibido: .{extension}'
+                )
+            # Validar tamaño (max 5MB)
+            if archivo.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('El archivo no debe superar los 5MB.')
+        return archivo
 
 class ConfirmacionPedidoForm(forms.Form):
     """Formulario para confirmar el pedido"""
+    tipo_entrega = forms.ChoiceField(
+        choices=TipoEntrega.choices,
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-check-input',
+            'id': 'tipo-entrega'
+        }),
+        label="Tipo de Entrega",
+        initial=TipoEntrega.DOMICILIO
+    )
     metodo_pago = forms.ChoiceField(
         choices=MetodoPago.choices,
         widget=forms.Select(attrs={
@@ -96,17 +129,40 @@ class ConfirmacionPedidoForm(forms.Form):
         help_text="Instrucciones especiales para la entrega"
     )
 
+    comprobante_transferencia = forms.FileField(
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*,.pdf',
+            'id': 'comprobante-transferencia'
+        }),
+        help_text="Sube el comprobante de transferencia (obligatorio si pagas por transferencia)",
+        required=False
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Personalizar las opciones de método de pago
+        # Limitar métodos de pago a efectivo y transferencia
         self.fields['metodo_pago'].choices = [
             ('', 'Selecciona método de pago'),
             (MetodoPago.EFECTIVO, 'Efectivo'),
-            (MetodoPago.TARJETA_DEBITO, 'Tarjeta de Débito'),
-            (MetodoPago.TARJETA_CREDITO, 'Tarjeta de Crédito'),
             (MetodoPago.TRANSFERENCIA, 'Transferencia Bancaria'),
-            (MetodoPago.MERCADO_PAGO, 'Mercado Pago'),
         ]
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo_entrega = cleaned_data.get('tipo_entrega')
+        metodo_pago = cleaned_data.get('metodo_pago')
+        comprobante = cleaned_data.get('comprobante_transferencia')
+        
+        # Validar que si el pago es por transferencia, debe subir comprobante
+        if metodo_pago == MetodoPago.TRANSFERENCIA and not comprobante:
+            raise forms.ValidationError('Debes subir el comprobante de transferencia.')
+        
+        # Validar que solo efectivo está permitido para retiro en farmacia
+        if tipo_entrega == TipoEntrega.RETIRO and metodo_pago != MetodoPago.EFECTIVO:
+            raise forms.ValidationError('Para retiro en farmacia solo se permite pago en efectivo.')
+        
+        return cleaned_data
 
 class DireccionForm(forms.ModelForm):
     """Formulario para crear/editar direcciones"""
@@ -685,6 +741,12 @@ class RepartidorSignUpForm(UserCreationForm):
     first_name = forms.CharField(max_length=150, required=True, label="Nombre")
     last_name = forms.CharField(max_length=150, required=True, label="Apellido")
     telefono = forms.CharField(max_length=20, required=True)
+    edad = forms.IntegerField(min_value=18, max_value=100, required=True, label="Edad")
+    fecha_nacimiento = forms.DateField(
+        required=True,
+        label="Fecha de Nacimiento",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
 
     # Tu lógica de vehículo
     tipo_vehiculo = forms.ChoiceField(choices=Repartidor.TIPO_VEHICULO, required=True, label="Tipo de Vehículo")
@@ -729,6 +791,14 @@ class RepartidorSignUpForm(UserCreationForm):
                 '</ul>'
             )
 
+    def clean_dni(self):
+        dni = self.cleaned_data.get('dni')
+        if Repartidor.objects.filter(dni=dni).exists():
+            raise forms.ValidationError("Ya existe un repartidor registrado con este DNI.")
+        if User.objects.filter(username=dni).exists():
+            raise forms.ValidationError("Este DNI ya está asociado a otra cuenta.")
+        return dni
+
     def clean(self):
         cleaned_data = super().clean()
         tipo_vehiculo = cleaned_data.get('tipo_vehiculo')
@@ -766,10 +836,11 @@ class RepartidorSignUpForm(UserCreationForm):
                 user=user,
                 dni=self.cleaned_data.get('dni'),
                 telefono=self.cleaned_data.get('telefono'),
+                edad=self.cleaned_data.get('edad'),
+                fecha_nacimiento=self.cleaned_data.get('fecha_nacimiento'),
                 tipo_vehiculo=self.cleaned_data.get('tipo_vehiculo'),
                 patente=self.cleaned_data.get('patente'),
                 cedula_vehiculo=self.cleaned_data.get('cedula_vehiculo'),
-                direccion=direccion, # Asignamos la Direccion
                 activo=False # Inicia inactivo
             )
         return user

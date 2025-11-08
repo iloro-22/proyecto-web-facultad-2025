@@ -294,10 +294,13 @@
                                 <p class="precio">${{ producto.precio_base }}</p>
                             </div>
                             <div class="stock-controls">
-                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}">
+                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}" data-stock-anterior="{{ producto.stock_disponible }}">
                                 <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
                                     Actualizar
                                 </button>
+                                <div class="stock-error" id="stock-error-{{ producto.id }}" style="display: none; color: red; font-size: 0.875rem; margin-top: 0.25rem;">
+                                    Los números deben ser positivos
+                                </div>
                             </div>
                         </div>
                         {% empty %}
@@ -324,10 +327,13 @@
                                 <p class="precio">${{ producto.precio_base }}</p>
                             </div>
                             <div class="stock-controls">
-                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}">
+                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}" data-stock-anterior="{{ producto.stock_disponible }}">
                                 <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
                                     Actualizar
                                 </button>
+                                <div class="stock-error" id="stock-error-{{ producto.id }}" style="display: none; color: red; font-size: 0.875rem; margin-top: 0.25rem;">
+                                    Los números deben ser positivos
+                                </div>
                             </div>
                         </div>
                         {% empty %}
@@ -354,10 +360,13 @@
                                 <p class="precio">${{ producto.precio_base }}</p>
                             </div>
                             <div class="stock-controls">
-                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}">
+                                <input type="number" class="stock-input" value="{{ producto.stock_disponible }}" min="0" data-producto-id="{{ producto.id }}" data-stock-anterior="{{ producto.stock_disponible }}">
                                 <button class="btn btn-primary btn-sm actualizar-stock" data-producto-id="{{ producto.id }}">
                                     Actualizar
                                 </button>
+                                <div class="stock-error" id="stock-error-{{ producto.id }}" style="display: none; color: red; font-size: 0.875rem; margin-top: 0.25rem;">
+                                    Los números deben ser positivos
+                                </div>
                             </div>
                         </div>
                         {% empty %}
